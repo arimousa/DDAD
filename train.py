@@ -11,6 +11,8 @@ from torchvision import models
 import timm
 from backbone import *
 
+from torch.utils.tensorboard import SummaryWriter
+
 
 
 def build_optimizer(model, config):
@@ -108,11 +110,11 @@ def sample_plot_image(model, trainloader, constant_dict, epoch, config):
 
 
 
-def trainer(model, constant_dict, config):
+def trainer(model, constant_dict, config, category):
     optimizer = build_optimizer(model, config)
     train_dataset = MVTecDataset(
         root= config.data.data_dir,
-        category=config.data.category,
+        category=category,
         input_size= config.data.image_size,
         is_train=True,
     )
@@ -129,6 +131,7 @@ def trainer(model, constant_dict, config):
 
    # feature_extractor = Feature_extractor(config)
   #  feature_extractor.to(config.model.device)
+    writer = SummaryWriter('runs/DDAD')
 
     for epoch in range(config.model.epochs):
         for step, batch in enumerate(trainloader):
@@ -138,8 +141,11 @@ def trainer(model, constant_dict, config):
             optimizer.zero_grad()
             t = torch.randint(0, config.model.trajectory_steps, (batch[0].shape[0],), device=config.model.device).long()
             loss = get_loss(model, constant_dict, batch[0], t) 
+            writer.add_scalar('loss', loss, epoch)
+
             loss.backward()
             optimizer.step()
+            
             if epoch % 5 == 0 and step == 0:
                 print(f"Epoch {epoch} | Loss: {loss.item()}  |  Memory allocated : {torch.cuda.memory_allocated(config.model.device)}")
             if epoch %100 == 0 and step ==0:
@@ -150,6 +156,9 @@ def trainer(model, constant_dict, config):
         model_save_dir = os.path.join(os.getcwd(), config.model.checkpoint_dir)
         if not os.path.exists(model_save_dir):
             os.mkdir(model_save_dir)
-        torch.save(model.state_dict(), os.path.join(config.model.checkpoint_dir, config.model.checkpoint_name),
+        torch.save(model.state_dict(), os.path.join(config.model.checkpoint_dir, category), #config.model.checkpoint_name
     )
+
+    writer.flush()
+    writer.close()
 

@@ -11,6 +11,8 @@ import torch.nn.functional as F
 from train import trainer
 from datetime import timedelta
 
+
+
 def constant(config):
     # Define beta schedule
     betas = linear_beta_schedule(timesteps=config.model.trajectory_steps)
@@ -36,12 +38,12 @@ def constant(config):
 
 
 def build_model(config):
-    #model = SimpleUnet()
-    model = UNet()
+    model = SimpleUnet()
+    # model = UNet()
     return model
 
 
-def train(args):
+def train(args, category):
     config = OmegaConf.load(args.config)
     start = time.time()
     model = build_model(config)
@@ -52,7 +54,7 @@ def train(args):
 
     model.train()
     constants_dict = constant(config)
-    trainer(model, constants_dict, config)
+    trainer(model, constants_dict, config, category)
     end = time.time()
     print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)))
     with open('readme.txt', 'w') as f:
@@ -60,16 +62,16 @@ def train(args):
         f.write('\n')
 
 
-def evaluate(args):
+def evaluate(args, category):
     start = time.time()
     config = OmegaConf.load(args.config)
     model = build_model(config)
-    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.model.checkpoint_name))
+    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir),category)) # config.model.checkpoint_name
     model.load_state_dict(checkpoint)    
     model.to(config.model.device)
     model.eval()
     constants_dict = constant(config)
-    validate(model, constants_dict, config)
+    validate(model, constants_dict, config, category)
     end = time.time()
     print('Test time is ', str(timedelta(seconds=end - start)))
 
@@ -97,9 +99,13 @@ if __name__ == "__main__":
     np.random.seed(42)
     if args.eval:
         print('only evaluation, not training')
-        evaluate(args)
+        for category in ['carpet', 'bottle', 'hazelnut', 'leather', 'cable', 'capsule', 'grid', 'pill',
+                 'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']:
+            evaluate(args, category)
     else:
-        train(args)
-        evaluate(args)
+        for category in ['carpet', 'bottle', 'hazelnut', 'leather', 'cable', 'capsule', 'grid', 'pill',
+                 'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']:
+            train(args, category)
+            evaluate(args, category)
 
         
