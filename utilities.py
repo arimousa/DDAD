@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 
-def linear_beta_schedule(timesteps, start=0.0001, end=0.0101):  #end=0.0005 Epoch 200 | step 000 Loss: 0.16750505566596985  || end=0.005 Epoch 300 | step 000 Loss: 0.10944684594869614 
+def linear_beta_schedule(timesteps, start=0.0008, end=0.01): # start=0.0001, end=0.02
     return torch.linspace(start, end, timesteps)
 
 
@@ -27,6 +27,20 @@ def show_tensor_image(image):
         transforms.Lambda(lambda t: t * 255.),
         transforms.Lambda(lambda t: t.cpu().numpy().astype(np.uint8)),
         transforms.ToPILImage(),
+    ])
+
+    # Take first image of batch
+    if len(image.shape) == 4:
+        image = image[0, :, :, :] 
+    return reverse_transforms(image)
+
+def show_tensor_mask(image):
+    reverse_transforms = transforms.Compose([
+       # transforms.Lambda(lambda t: (t + 1) / 2),
+        transforms.Lambda(lambda t: t.permute(1, 2, 0)), # CHW to HWC
+       # transforms.Lambda(lambda t: t * 255.),
+        transforms.Lambda(lambda t: t.cpu().numpy().astype(np.uint8)),
+     #   transforms.ToPILImage(),
     ])
 
     # Take first image of batch

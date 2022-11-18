@@ -48,10 +48,7 @@ def train(args, category):
     start = time.time()
     model = build_model(config)
     print("Num params: ", sum(p.numel() for p in model.parameters()))
-    print('Beginning mem: ', torch.cuda.memory_allocated(config.model.device))
     model.to(config.model.device)
-    print('1- After model to device: ', torch.cuda.memory_allocated(config.model.device))
-
     model.train()
     constants_dict = constant(config)
     trainer(model, constants_dict, config, category)
@@ -99,12 +96,13 @@ if __name__ == "__main__":
     np.random.seed(42)
     if args.eval:
         print('only evaluation, not training')
-        for category in ['carpet', 'bottle', 'hazelnut', 'leather', 'cable', 'capsule', 'grid', 'pill',
+        for category in ['bottle', 'cable', 'hazelnut', 'carpet',  'leather', 'capsule', 'grid', 'pill',
                  'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']:
             evaluate(args, category)
     else:
-        for category in ['carpet', 'bottle', 'hazelnut', 'leather', 'cable', 'capsule', 'grid', 'pill',
+        for category in [ 'hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill',
                  'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']:
+            print(category)
             train(args, category)
             evaluate(args, category)
 

@@ -67,7 +67,7 @@ class Feature_extractor(nn.Module):
 
 
             embeddings = features[0]
-            for feature in features:
+            for feature in features[1:]:
                 layer_embedding = feature
                 layer_embedding = F.interpolate(layer_embedding, size=embeddings.shape[-2:], mode='nearest')
                 embeddings = torch.cat((embeddings,layer_embedding),1)

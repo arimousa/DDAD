@@ -16,6 +16,12 @@ class MVTecDataset(torch.utils.data.Dataset):
                 transforms.Lambda(lambda t: (t * 2) - 1) # Scale between [-1, 1] 
             ]
         )
+        self.mask_transform = transforms.Compose(
+            [
+                transforms.Resize((input_size, input_size)),
+                transforms.ToTensor(), # Scales data into [0,1] 
+            ]
+        )
         if is_train:
             self.image_files = glob(
                 os.path.join(root, category, "train", "good", "*.png")
@@ -41,7 +47,7 @@ class MVTecDataset(torch.utils.data.Dataset):
                         ".png", "_mask.png"
                     )
                 )
-                target = self.image_transform(target)
+                target = self.mask_transform(target)
                 label = 'defective'
             return image, target, label
 

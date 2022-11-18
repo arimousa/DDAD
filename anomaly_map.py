@@ -38,6 +38,7 @@ def heat_map(outputs, targets, config):
     anomaly_map = gaussian_blur2d(
         anomaly_map , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
         )
+    anomaly_map = torchvision.transforms.functional.rgb_to_grayscale(anomaly_map)
     
     return anomaly_map
     
