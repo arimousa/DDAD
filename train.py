@@ -8,6 +8,7 @@ from torch.optim import Adam
 from dataset import *
 from backbone import *
 from noise import *
+from visualize import show_tensor_image
 
 from torch.utils.tensorboard import SummaryWriter
 
@@ -54,7 +55,7 @@ def sample_timestep(config, model, constant_dict, x, t):
     if t == 0:
         return model_mean
     else:
-        noise = get_noise(x, config)
+        noise = get_noise(x, t, config)
 
         return model_mean + torch.sqrt(posterior_variance_t) * noise 
 
@@ -68,7 +69,7 @@ def sample_plot_image(model, trainloader, constant_dict, epoch, config):
     trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps]).type(torch.int64)
 
     image = forward_diffusion_sample(image, trajectoy_steps, constant_dict, config)[0]
-    num_images = 10
+    num_images = 5
     trajectory_steps = config.model.trajectory_steps
     stepsize = int(trajectory_steps/num_images)
     
@@ -129,7 +130,7 @@ def trainer(model, constant_dict, config, category):
             optimizer.step()
             if epoch % 100 == 0 and step == 0:
                 print(f"Epoch {epoch} | Loss: {loss.item()}")
-            if epoch %200 == 0 and step ==0:
+            if epoch in [0,10,30,100,300,449] and step ==0:
                 sample_plot_image(model, trainloader, constant_dict, epoch, config)
 
 

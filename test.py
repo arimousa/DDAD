@@ -35,8 +35,7 @@ def test_sample_timestep(config, model, x, t, constants_dict):
     if t == 0:
         return model_mean
     else:
-        noise = get_noise(x, config)
-
+        noise = get_noise(x, t, config)
         return model_mean + torch.sqrt(posterior_variance_t) * noise 
 
 

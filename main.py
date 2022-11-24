@@ -6,7 +6,7 @@ import time
 from model import *
 from test import validate
 from omegaconf import OmegaConf
-from utilities import linear_beta_schedule
+from utilities import *
 import torch.nn.functional as F
 from train import trainer
 from datetime import timedelta
@@ -15,7 +15,14 @@ from datetime import timedelta
 
 def constant(config):
     # Define beta schedule
-    betas = linear_beta_schedule(timesteps=config.model.trajectory_steps)
+    if config.model.schedule == 'linear':
+        betas = linear_beta_schedule(timesteps=config.model.trajectory_steps)
+    elif config.model.schedule == 'cosine':
+        betas = cosine_schedule(timesteps=config.model.trajectory_steps)
+    else:
+        print('schedule is not selected properly. Default:linear')
+        betas = linear_beta_schedule(timesteps=config.model.trajectory_steps)
+
     # Pre-calculate different terms for closed form
     alphas = 1. - betas
     alphas_cumprod = torch.cumprod(alphas, axis=0)
@@ -96,7 +103,7 @@ if __name__ == "__main__":
     np.random.seed(42)
     if args.eval:
         print('only evaluation, not training')
-        for category in ['bottle', 'cable', 'hazelnut', 'carpet',  'leather', 'capsule', 'grid', 'pill',
+        for category in [ 'hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill',
                  'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']:
             evaluate(args, category)
     else:

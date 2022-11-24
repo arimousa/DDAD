@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
-from utilities import *
+from torchvision.transforms import transforms
+import numpy as np
 
 
 def visualize(image, noisy_image, GT, anomaly_map, index, category) :
@@ -27,3 +28,33 @@ def visualize(image, noisy_image, GT, anomaly_map, index, category) :
         plt.savefig('results/{}sample{}.png'.format(category,index+idx))
         plt.close()
 
+
+
+def show_tensor_image(image):
+    reverse_transforms = transforms.Compose([
+        transforms.Lambda(lambda t: (t + 1) / 2),
+        transforms.Lambda(lambda t: t.permute(1, 2, 0)), # CHW to HWC
+        transforms.Lambda(lambda t: t * 255.),
+        transforms.Lambda(lambda t: t.cpu().numpy().astype(np.uint8)),
+        transforms.ToPILImage(),
+    ])
+
+    # Take first image of batch
+    if len(image.shape) == 4:
+        image = image[0, :, :, :] 
+    return reverse_transforms(image)
+
+def show_tensor_mask(image):
+    reverse_transforms = transforms.Compose([
+       # transforms.Lambda(lambda t: (t + 1) / 2),
+        transforms.Lambda(lambda t: t.permute(1, 2, 0)), # CHW to HWC
+       # transforms.Lambda(lambda t: t * 255.),
+        transforms.Lambda(lambda t: t.cpu().numpy().astype(np.uint8)),
+     #   transforms.ToPILImage(),
+    ])
+
+    # Take first image of batch
+    if len(image.shape) == 4:
+        image = image[0, :, :, :] 
+    return reverse_transforms(image)
+        
