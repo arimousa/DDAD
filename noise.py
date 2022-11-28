@@ -17,7 +17,7 @@ def get_noise(x, t, config):
         #https://github.com/pvigier/perlin-numpy.git 
         noise = perlin_noise()
         final_noise = noise.unsqueeze(0).to(config.model.device)
-        for _ in range (x.sahpe()[0]-1):
+        for _ in range (x.shape[0]-1):
             noise =  perlin_noise().unsqueeze(0).to(config.model.device)
             final_noise= torch.cat((final_noise,noise), 0)
         return final_noise

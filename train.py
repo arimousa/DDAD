@@ -24,8 +24,8 @@ def build_optimizer(model, config):
 def get_loss(model, constant_dict, x_0, t, config):
     x_noisy, noise = forward_diffusion_sample(x_0, t , constant_dict, config)
     noise_pred = model(x_noisy, t)
-    loss = F.l1_loss(noise, noise_pred)
-    #loss = F.mse_loss(noise, noise_pred)
+    #loss = F.l1_loss(noise, noise_pred)
+    loss = F.mse_loss(noise, noise_pred)
 
     return loss
 
@@ -63,7 +63,7 @@ def sample_timestep(config, model, constant_dict, x, t):
 
 
 @torch.no_grad()
-def sample_plot_image(model, trainloader, constant_dict, epoch, config):
+def sample_plot_image(model, trainloader, constant_dict, epoch, category, config):
     image = next(iter(trainloader))[0]
     # Sample noise
     trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps]).type(torch.int64)
@@ -89,7 +89,7 @@ def sample_plot_image(model, trainloader, constant_dict, epoch, config):
             plt.imshow(image_to_show)
             plt.title(i)
     plt.subplots_adjust(wspace=0.4)
-    plt.savefig('results/backward_process_after_{}_epochs.png'.format(epoch))
+    plt.savefig('results/{}backward_process_after_{}_epochs.png'.format(category, epoch))
     # plt.show()
 
 
@@ -97,6 +97,8 @@ def sample_plot_image(model, trainloader, constant_dict, epoch, config):
 
 
 def trainer(model, constant_dict, config, category):
+    with open('readme.txt', 'a') as f:
+        f.write(f"\n {category} : ")
     optimizer = build_optimizer(model, config)
     train_dataset = MVTecDataset(
         root= config.data.data_dir,
@@ -128,10 +130,12 @@ def trainer(model, constant_dict, config, category):
 
             loss.backward()
             optimizer.step()
-            if epoch % 100 == 0 and step == 0:
+            if epoch % 10 == 0 and step == 0:
                 print(f"Epoch {epoch} | Loss: {loss.item()}")
-            if epoch in [0,10,30,100,300,449] and step ==0:
-                sample_plot_image(model, trainloader, constant_dict, epoch, config)
+                with open('readme.txt', 'a') as f:
+                    f.write(f"\n Epoch {epoch} | Loss: {loss.item()}")
+            if epoch %399 == 0 and epoch > 0 and step ==0:
+                sample_plot_image(model, trainloader, constant_dict, epoch, category, config)
 
 
     if config.model.save_model:

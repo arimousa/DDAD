@@ -90,7 +90,7 @@ def validate(model, constants_dict, config, category):
             predictions_mean.append( torch.mean(pred).item())
 
 
-        visualize(data, noisy_image, targets, anomaly_map, index, category) 
+    #    visualize(data, noisy_image, targets, anomaly_map, index, category) 
         index = index + data.shape[0] 
 
         anomaly_map_list.append(anomaly_map)

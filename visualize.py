@@ -32,7 +32,7 @@ def visualize(image, noisy_image, GT, anomaly_map, index, category) :
 
 def show_tensor_image(image):
     reverse_transforms = transforms.Compose([
-        transforms.Lambda(lambda t: (t + 1) / 2),
+        transforms.Lambda(lambda t: (t + 1) / (2)),
         transforms.Lambda(lambda t: t.permute(1, 2, 0)), # CHW to HWC
         transforms.Lambda(lambda t: t * 255.),
         transforms.Lambda(lambda t: t.cpu().numpy().astype(np.uint8)),

@@ -5,7 +5,7 @@ import numpy as np
 import math
 
 
-def linear_beta_schedule(timesteps, start=0.0001, end=0.02): # 0.006
+def linear_beta_schedule(timesteps, start=0.0001, end=0.008): # 0.006
     return torch.linspace(start, end, timesteps)
 
 def cosine_schedule(timesteps):
