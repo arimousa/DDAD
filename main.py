@@ -45,8 +45,8 @@ def constant(config):
 
 
 def build_model(config):
-    #model = SimpleUnet()
-    model = UNetModel(256, 64, dropout=0.3, n_heads=4 ,in_channels=3)
+    model = SimpleUnet()
+    #model = UNetModel(256, 64, dropout=0.3, n_heads=4 ,in_channels=3)
     return model
 
 
@@ -62,7 +62,7 @@ def train(args, category):
     end = time.time()
     print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
     with open('readme.txt', 'a') as f:
-        f.write('\n training time is {}'.format(str(timedelta(seconds=end - start))))
+        f.write('\n training time is {}\n'.format(str(timedelta(seconds=end - start))))
 
 
 def evaluate(args, category):

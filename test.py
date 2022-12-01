@@ -75,7 +75,7 @@ def validate(model, constants_dict, config, category):
         for i in range(0,test_trajectoy_steps)[::-1]:
             t = torch.full((1,), i, device=config.model.device, dtype=torch.long)
             noisy_image = test_sample_timestep(config, model, noisy_image.to(config.model.device), t, constants_dict)
-            if i in  [0,10,20,30]: 
+            if i in  [0,1,2,3]: 
                 f_image = forward_diffusion_sample(data, t , constants_dict, config)[0]
                 data_forward.append(f_image)
                 data_reconstructed.append(noisy_image)
