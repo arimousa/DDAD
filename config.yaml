@@ -17,11 +17,11 @@ model:
   learning_rate: 0.001
   weight_decay: 0.00001
   epochs: 500
-  trajectory_steps: 50
-  test_trajectoy_steps: 49 # 230 cannot reconstruct missed components
+  trajectory_steps: 200
+  test_trajectoy_steps: 199 # 230 cannot reconstruct missed components
   device: 'cuda' #<"cpu", "gpu", "tpu", "ipu">
   save_model: True
-  num_workers : 48
+  num_workers : 32
   seed : 42
 
 
@@ -34,4 +34,3 @@ metrics:
     method: adaptive #options: [adaptive, manual]
     manual_image: null
     manual_pixel: null
-

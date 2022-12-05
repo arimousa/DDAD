@@ -27,7 +27,7 @@ class Feature_extractor(nn.Module):
                         self.backbone,
                         pretrained=True,
                         features_only=True,
-                        out_indices=[ 1,2,3 ],
+                        out_indices=[1],
                     )
             channels = self.feature_extractor.feature_info.channels()
             scales = self.feature_extractor.feature_info.reduction()

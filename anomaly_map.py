@@ -24,6 +24,7 @@ def heat_map(outputs, targets, config):
         outputs_features = feature_extractor(output.to(config.model.device))
         targets_features = feature_extractor(target.to(config.model.device))
 
+
             
         distance_map = 1 - F.cosine_similarity(outputs_features.to(config.model.device), targets_features.to(config.model.device),dim=1).to(config.model.device)
         distance_map = torch.unsqueeze(distance_map, dim=1)

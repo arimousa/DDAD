@@ -5,7 +5,7 @@ import numpy as np
 import math
 
 
-def linear_beta_schedule(timesteps, start=0.0001, end=0.002): # 0.006
+def linear_beta_schedule(timesteps, start=0.0001, end=0.004): # 0.006 for 300
     return torch.linspace(start, end, timesteps)
 
 def cosine_schedule(timesteps):
@@ -36,7 +36,7 @@ def betas_for_alpha_bar(num_diffusion_timesteps, alpha_bar, max_beta=0.999):
     return np.array(betas)
 
 
-def get_index_from_list(vals, t, x_shape):
+def get_index_from_list(vals, t, x_shape, config):
     """ 
     Returns a specific index t of a passed list of values vals
     while considering the batch dimension.

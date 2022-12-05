@@ -21,9 +21,9 @@ def forward_diffusion_sample(x_0, t, constant_dict, config): #, device="cpu"
     noise = get_noise(x_0, t, config)
     device = config.model.device
 
-    sqrt_alphas_cumprod_t = get_index_from_list(sqrt_alphas_cumprod, t, x_0.shape)
+    sqrt_alphas_cumprod_t = get_index_from_list(sqrt_alphas_cumprod, t, x_0.shape, config)
     sqrt_one_minus_alphas_cumprod_t = get_index_from_list(
-        sqrt_one_minus_alphas_cumprod, t, x_0.shape
+        sqrt_one_minus_alphas_cumprod, t, x_0.shape, config
     )
     # mean + variance
     return sqrt_alphas_cumprod_t.to(device) * x_0.to(device) \

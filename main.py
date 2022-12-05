@@ -15,13 +15,9 @@ from datetime import timedelta
 
 def constant(config):
     # Define beta schedule
-    if config.model.schedule == 'linear':
-        betas = linear_beta_schedule(timesteps=config.model.trajectory_steps)
-    elif config.model.schedule == 'cosine':
-        betas = cosine_schedule(timesteps=config.model.trajectory_steps)
-    else:
-        print('schedule is not selected properly. Default:linear')
-        betas = linear_beta_schedule(timesteps=config.model.trajectory_steps)
+
+    betas = linear_beta_schedule(timesteps=config.model.trajectory_steps)
+
 
     # Pre-calculate different terms for closed form
     alphas = 1. - betas
@@ -45,8 +41,8 @@ def constant(config):
 
 
 def build_model(config):
-    model = SimpleUnet()
-    #model = UNetModel(256, 64, dropout=0.3, n_heads=4 ,in_channels=3)
+    #model = SimpleUnet()
+    model = UNetModel(256, 64, dropout=0, n_heads=4 ,in_channels=3)
     return model
 
 
@@ -55,7 +51,7 @@ def train(args, category):
     start = time.time()
     model = build_model(config)
     print("Num params: ", sum(p.numel() for p in model.parameters()))
-    model.to(config.model.device)
+    model = model.to(config.model.device)
     model.train()
     constants_dict = constant(config)
     trainer(model, constants_dict, config, category)
