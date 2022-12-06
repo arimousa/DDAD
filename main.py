@@ -10,14 +10,14 @@ from utilities import *
 import torch.nn.functional as F
 from train import trainer
 from datetime import timedelta
+from EMA import EMAHelper
 
 
 
 def constant(config):
     # Define beta schedule
 
-    betas = linear_beta_schedule(timesteps=config.model.trajectory_steps)
-
+    betas = beta_schedule(beta_schedule = config.model.schedule, beta_start = config.model.beta_start, beta_end=config.model.beta_end, num_diffusion_timesteps=config.model.trajectory_steps)
 
     # Pre-calculate different terms for closed form
     alphas = 1. - betas
@@ -53,8 +53,14 @@ def train(args, category):
     print("Num params: ", sum(p.numel() for p in model.parameters()))
     model = model.to(config.model.device)
     model.train()
+    if config.model.ema:
+        ema_helper = EMAHelper(mu=config.model.ema_rate)
+        ema_helper.register(model)
+    else:
+        ema_helper = None
+ #   model = torch.nn.DataParallel(model)
     constants_dict = constant(config)
-    trainer(model, constants_dict, config, category)
+    trainer(model, constants_dict, ema_helper, config, category)
     end = time.time()
     print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
     with open('readme.txt', 'a') as f:
@@ -69,6 +75,13 @@ def evaluate(args, category):
     model.load_state_dict(checkpoint)    
     model.to(config.model.device)
     model.eval()
+    if config.model.ema:
+        ema_helper = EMAHelper(mu=config.model.ema_rate)
+        ema_helper.register(model)
+        ema_helper.load_state_dict(checkpoint)
+        ema_helper.ema(model)
+    else:
+        ema_helper = None
     constants_dict = constant(config)
     validate(model, constants_dict, config, category)
     end = time.time()

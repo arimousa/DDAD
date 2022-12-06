@@ -19,7 +19,7 @@ def heat_map(outputs, targets, config):
       #  output = F.interpolate(output , size = int(config.data.image_size/8), mode="bilinear")
       #  target = F.interpolate(target , size = int(config.data.image_size/8), mode="bilinear")
 
-        feature_extractor = Feature_extractor(config)
+        feature_extractor = Feature_extractor(config, out_indices=[2,3])
         feature_extractor.to(config.model.device)
         outputs_features = feature_extractor(output.to(config.model.device))
         targets_features = feature_extractor(target.to(config.model.device))

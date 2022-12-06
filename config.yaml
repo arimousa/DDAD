@@ -7,18 +7,22 @@ data :
 
 
 model:
-  checkpoint_dir: checkpoints/500/
+  checkpoint_dir: checkpoints/500250/
   checkpoint_name: weights
   exp_name: default
   backbone: wide_resnet50_2 #cait_m48_448 wide_resnet50_2
   pre_trained: True
   noise : Gaussian # options : [Gaussian, Perlin]
-  schedule : linear # options: [linear, cosine]
+  schedule : linear # options: [linear, quad, const, jsd, sigmoid]
   learning_rate: 0.001
   weight_decay: 0.00001
   epochs: 500
-  trajectory_steps: 200
-  test_trajectoy_steps: 199 # 230 cannot reconstruct missed components
+  trajectory_steps: 601
+  test_trajectoy_steps: 600 # 230 cannot reconstruct missed components
+  beta_start : 0.0001 # 0.0001
+  beta_end : 0.006  # 0.006 for 300
+  ema : True
+  ema_rate : 0.999
   device: 'cuda' #<"cpu", "gpu", "tpu", "ipu">
   save_model: True
   num_workers : 32

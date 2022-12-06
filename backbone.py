@@ -10,10 +10,11 @@ from typing import Callable, List, Tuple, Union
 
 
 class Feature_extractor(nn.Module):
-    def __init__(self , config) -> None:
+    def __init__(self , config, out_indices=[2,3]) -> None:
         super().__init__()
 
         self.config = config
+        self.out_indices = out_indices
         self.input_size = config.data.image_size
         self.backbone = config.model.backbone
         if self.backbone in ["cait_m48_448"]:
@@ -27,7 +28,7 @@ class Feature_extractor(nn.Module):
                         self.backbone,
                         pretrained=True,
                         features_only=True,
-                        out_indices=[1],
+                        out_indices=self.out_indices,
                     )
             channels = self.feature_extractor.feature_info.channels()
             scales = self.feature_extractor.feature_info.reduction()
