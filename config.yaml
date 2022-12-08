@@ -16,9 +16,9 @@ model:
   schedule : linear # options: [linear, quad, const, jsd, sigmoid]
   learning_rate: 0.001
   weight_decay: 0.00001
-  epochs: 500
-  trajectory_steps: 601
-  test_trajectoy_steps: 600 # 230 cannot reconstruct missed components
+  epochs: 400
+  trajectory_steps: 301
+  test_trajectoy_steps: 300 # 230 cannot reconstruct missed components
   beta_start : 0.0001 # 0.0001
   beta_end : 0.006  # 0.006 for 300
   ema : True

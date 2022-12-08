@@ -48,7 +48,7 @@ def build_model(config):
 
 def train(args, category):
     config = OmegaConf.load(args.config)
-    start = time.time()
+    
     model = build_model(config)
     print("Num params: ", sum(p.numel() for p in model.parameters()))
     model = model.to(config.model.device)
@@ -60,9 +60,14 @@ def train(args, category):
         ema_helper = None
  #   model = torch.nn.DataParallel(model)
     constants_dict = constant(config)
-    trainer(model, constants_dict, ema_helper, config, category)
-    end = time.time()
-    print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
+    for v in [0,10,20,30,40,50,60,70,80,90,100]:
+        start = time.time()
+        print('v_train : ',v,'\n')
+        with open('readme.txt', 'a') as f:
+            f.write(f'v_train : v \n')
+        trainer(model, constants_dict, v, ema_helper, config, category)
+        end = time.time()
+        print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
     with open('readme.txt', 'a') as f:
         f.write('\n training time is {}\n'.format(str(timedelta(seconds=end - start))))
 
@@ -71,7 +76,7 @@ def evaluate(args, category):
     start = time.time()
     config = OmegaConf.load(args.config)
     model = build_model(config)
-    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir),category)) # config.model.checkpoint_name
+    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir),os.path.join(category,str(250)))) # config.model.checkpoint_name
     model.load_state_dict(checkpoint)    
     model.to(config.model.device)
     model.eval()
@@ -83,7 +88,11 @@ def evaluate(args, category):
     else:
         ema_helper = None
     constants_dict = constant(config)
-    validate(model, constants_dict, config, category)
+    for v in [0,10,20,30,40,50,60,70,80,90,100]:
+        print('v_test : ',v,'\n')
+        with open('readme.txt', 'a') as f:
+            f.write(f'v_test : {v} \n')
+        validate(model, constants_dict, config, category, v)
     end = time.time()
     print('Test time is ', str(timedelta(seconds=end - start)))
 

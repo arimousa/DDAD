@@ -22,7 +22,7 @@ from EMA import EMAHelper
 
 
 
-def trainer(model, constant_dict, ema_helper, config, category):
+def trainer(model, constants_dict, v, ema_helper, config, category):
     with open('readme.txt', 'a') as f:
         f.write(f"\n {category} : ")
     optimizer = build_optimizer(model, config)
@@ -49,7 +49,7 @@ def trainer(model, constant_dict, ema_helper, config, category):
 
 
             optimizer.zero_grad()
-            loss = get_loss(model, constant_dict, batch[0], t, config) 
+            loss = get_loss(model, constants_dict, batch[0], t, v, config) 
             writer.add_scalar('loss', loss, epoch)
 
             loss.backward()
@@ -60,15 +60,20 @@ def trainer(model, constant_dict, ema_helper, config, category):
                 print(f"Epoch {epoch} | Loss: {loss.item()}")
                 with open('readme.txt', 'a') as f:
                     f.write(f"\n Epoch {epoch} | Loss: {loss.item()}  |   ")
+            # if epoch %50 == 0 and step ==0:
+            #     sample_plot_image(model, trainloader, constant_dict, epoch, category, config)
             if epoch %50 == 0 and step ==0:
-                sample_plot_image(model, trainloader, constant_dict, epoch, category, config)
-            if epoch %50 == 0 and epoch > 0 and step ==0:
-                validate(model, constant_dict, config, category)
+                for v in [0,10,20,30,40,50,60,70,80,90,100]:
+                    print('v_test : ',v,'\n')
+                    with open('readme.txt', 'a') as f:
+                        f.write(f'v_test : {v} \n')
+                    validate(model, constants_dict, config, category, v)
+                #validate(model, constant_dict, config, category)
                 if config.model.save_model:
                     model_save_dir = os.path.join(os.getcwd(), config.model.checkpoint_dir)
                     if not os.path.exists(model_save_dir):
                         os.mkdir(model_save_dir)
-                    torch.save(model.state_dict(), os.path.join(config.model.checkpoint_dir, os.path.join(category,str(epoch))), #config.model.checkpoint_name
+                    torch.save(model.state_dict(), os.path.join(config.model.checkpoint_dir, os.path.join(category,str(f'{epoch}+{v}'))), #config.model.checkpoint_name
                 )
 
 

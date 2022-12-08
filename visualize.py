@@ -5,6 +5,7 @@ import torch
 import os
 from forward_process import *
 from dataset import *
+from sample import *
 
 from noise import *
 

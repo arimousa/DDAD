@@ -45,4 +45,4 @@ def metric(labels_list, predictions_max, predictions_mean, anomaly_map_list, GT_
 
     with open('readme.txt', 'a') as f:
         f.write(
-            f"AUROC_max: {auroc_max}   |   AUROC_mean: {auroc_mean}     |    auroc_pixel{auroc_pixel}    |     F1SCORE_max: {f1_scor_max}    |  F1SCORE_mean: {f1_scor_mean} |    f1_score_pixel: {f1_score_pixel}")
+            f"AUROC_max: {auroc_max}   |   AUROC_mean: {auroc_mean}     |    auroc_pixel{auroc_pixel}    |     F1SCORE_max: {f1_scor_max}    |  F1SCORE_mean: {f1_scor_mean} |    f1_score_pixel: {f1_score_pixel}\n")

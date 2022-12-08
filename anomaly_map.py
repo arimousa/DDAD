@@ -9,7 +9,7 @@ from backbone import *
 
 
 
-def heat_map(outputs, targets, config):
+def heat_map(outputs, targets, mean_train_dataset, config, v):
     sigma = 4
     kernel_size = 2*int(4 * sigma + 0.5) +1
     anomaly_map = torch.zeros([outputs[0].shape[0], 3, int(config.data.image_size), int(config.data.image_size)], device = config.model.device)#distance_map.shape[0]
@@ -30,9 +30,12 @@ def heat_map(outputs, targets, config):
         distance_map = torch.unsqueeze(distance_map, dim=1)
 
         distance_map = F.interpolate(distance_map , size = int(config.data.image_size), mode="bilinear")
+      #  mean_train_dataset = torch.Tensor(mean_train_dataset).to(config.model.device)
+        distance_map_image = 1 - F.cosine_similarity(output.to(config.model.device), mean_train_dataset,dim=1).to(config.model.device)
+        distance_map_image = torch.unsqueeze(distance_map_image, dim=1)
         
 
-        anomaly_map += distance_map
+        anomaly_map += ((v/100)*distance_map + ((100-v)/100)*distance_map_image)
         
        # anomaly_map += (output-target).square()*2 - 1
 

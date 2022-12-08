@@ -6,7 +6,7 @@ from backbone import *
 from noise import *
 
 
-def get_loss(model, constant_dict, x_0, t, config):
+def get_loss(model, constant_dict, x_0, t, v, config):
     
     x_noisy, noise = forward_diffusion_sample(x_0, t , constant_dict, config)
   
@@ -36,6 +36,6 @@ def get_loss(model, constant_dict, x_0, t, config):
         cosloss += torch.mean(1-cos_loss(F_x_noisy[item].view(F_x_noisy[item].shape[0],-1),
                                       F_x_prime_noisy[item].view(F_x_prime_noisy[item].shape[0],-1)))
 
-    return 0.5*(cosloss) + 0.5*(loss)
+    return (v/100)*(cosloss) + ((100-v)/100)*(loss)
 
 

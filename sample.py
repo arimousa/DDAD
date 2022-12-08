@@ -1,6 +1,6 @@
 import torch
 from noise import *
-
+from utilities import *
 
 @torch.no_grad()
 def sample_timestep(config, model, constant_dict, x, t):
@@ -25,7 +25,6 @@ def sample_timestep(config, model, constant_dict, x, t):
         return model_mean
     else:
         noise = get_noise(x, t, config)
-
-    return model_mean + torch.sqrt(posterior_variance_t) * noise 
+        return model_mean + torch.sqrt(posterior_variance_t) * noise 
 
 

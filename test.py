@@ -10,15 +10,11 @@ from backbone import *
 from metrics import metric
 
 from EMA import EMAHelper
-
-
 from torch.utils.tensorboard import SummaryWriter
 
 
-
-
 @torch.no_grad()
-def validate(model, constants_dict, config, category):
+def validate(model, constants_dict, config, category, v):
 
     test_dataset = MVTecDataset(
         root= config.data.data_dir,
@@ -34,6 +30,28 @@ def validate(model, constants_dict, config, category):
         drop_last=False,
     )
 
+    train_dataset = MVTecDataset(
+        root= config.data.data_dir,
+        category=category,
+        input_size= config.data.image_size,
+        is_train=True,
+    )
+    trainloader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=config.data.batch_size,
+        shuffle=True,
+        num_workers=config.model.num_workers,
+        drop_last=True,
+    )
+
+    mean_train_dataset = torch.zeros([3 ,config.data.image_size, config.data.image_size])
+    n_saples = 0
+    for step, batch in enumerate(trainloader):
+        mean_train_dataset += batch[0].sum(dim=0)
+        n_saples += batch[0].shape[0]
+    mean_train_dataset /= n_saples
+    mean_train_dataset = mean_train_dataset.to(config.model.device)
+
  
     labels_list = []
     predictions_max = []
@@ -48,22 +66,12 @@ def validate(model, constants_dict, config, category):
         data_forward = []
         data_reconstructed = []
 
-        # for j in range(0,10):
-        #     noisy_image =  forward_diffusion_sample(data, test_trajectoy_steps, constants_dict, config)[0]
-        #     for i in range(0,10)[::-1]:
-        #         t = torch.full((1,), i, device=config.model.device, dtype=torch.long)
-        #         noisy_image = test_sample_timestep(config, model, noisy_image.to(config.model.device), t, constants_dict)
-        #         if j == 9:
-        #             if i in  [0,5,10]: 
-        #                 f_image = forward_diffusion_sample(data, t , constants_dict, config)[0]
-        #                 data_forward.append(f_image)
-        #                 data_reconstructed.append(noisy_image)
         
         noisy_image = forward_diffusion_sample(data, test_trajectoy_steps, constants_dict, config)[0]
         for i in range(0,test_trajectoy_steps)[::-1]:
             t = torch.full((1,), i, device=config.model.device, dtype=torch.long)
-            noisy_image = test_sample_timestep(config, model, noisy_image.to(config.model.device), t, constants_dict)
-            if i in  [0,5]: #[0,5,10]
+            noisy_image = sample_timestep(config, model, constants_dict,  noisy_image.to(config.model.device), t)
+            if i in  [0,5,10]: #[0,5,10]
                 f_image = forward_diffusion_sample(data, t , constants_dict, config)[0]
                 data_forward.append(f_image)
                 data_reconstructed.append(noisy_image)
@@ -71,7 +79,7 @@ def validate(model, constants_dict, config, category):
             
 
         
-        anomaly_map = heat_map(data_reconstructed, data_forward, config)
+        anomaly_map = heat_map(data_reconstructed, data_forward, mean_train_dataset , config, v)
 
         for pred, label in zip(anomaly_map, labels):
             labels_list.append(0 if label == 'good' else 1)
