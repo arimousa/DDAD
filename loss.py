@@ -28,14 +28,14 @@ def get_loss(model, constant_dict, x_0, t, v, config):
     x_prime_noisy = x_noisy -  torch.sqrt(posterior_variance_t) * noise_pred
     x_noisy_for = x_noisy - torch.sqrt(posterior_variance_t) * noise
 
-    feature_extractor = Feature_extractor(config, out_indices=[2])
+    feature_extractor = Feature_extractor(config, out_indices=[1])
     feature_extractor.to(config.model.device)
     F_x_noisy = feature_extractor(x_noisy_for.to(config.model.device))
     F_x_prime_noisy = feature_extractor(x_prime_noisy.to(config.model.device))
     for item in range(len(F_x_noisy)):
         cosloss += torch.mean(1-cos_loss(F_x_noisy[item].view(F_x_noisy[item].shape[0],-1),
                                       F_x_prime_noisy[item].view(F_x_prime_noisy[item].shape[0],-1)))
-
+    # print('cosloss : ',cosloss)
+    # print('loss : ',loss)
     return (v/100)*(cosloss) + ((100-v)/100)*(loss)
-
 

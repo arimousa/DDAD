@@ -44,10 +44,18 @@ def validate(model, constants_dict, config, category, v):
         drop_last=True,
     )
 
-    mean_train_dataset = torch.zeros([3 ,config.data.image_size, config.data.image_size])
+    # mean_train_dataset = torch.zeros([3 ,config.data.image_size, config.data.image_size])
+    mean_train_dataset = torch.zeros([256, 64, 64]).to(config.model.device)
     n_saples = 0
+    feature_extractor = Feature_extractor(config, out_indices=[1])
+    feature_extractor.to(config.model.device)
     for step, batch in enumerate(trainloader):
-        mean_train_dataset += batch[0].sum(dim=0)
+        batch_features = feature_extractor(batch[0].to(config.model.device))
+        print('batch_features : ',batch_features.shape)
+        batch_features = torch.mean(batch_features, dim=0)
+        batch_features = batch_features.to(config.model.device)
+        mean_train_dataset += batch_features
+       # mean_train_dataset += batch[0].sum(dim=0)
         n_saples += batch[0].shape[0]
     mean_train_dataset /= n_saples
     mean_train_dataset = mean_train_dataset.to(config.model.device)
@@ -71,7 +79,7 @@ def validate(model, constants_dict, config, category, v):
         for i in range(0,test_trajectoy_steps)[::-1]:
             t = torch.full((1,), i, device=config.model.device, dtype=torch.long)
             noisy_image = sample_timestep(config, model, constants_dict,  noisy_image.to(config.model.device), t)
-            if i in  [0,5,10]: #[0,5,10]
+            if i in  [0,5,10,15,20]:
                 f_image = forward_diffusion_sample(data, t , constants_dict, config)[0]
                 data_forward.append(f_image)
                 data_reconstructed.append(noisy_image)

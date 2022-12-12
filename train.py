@@ -22,7 +22,7 @@ from EMA import EMAHelper
 
 
 
-def trainer(model, constants_dict, v, ema_helper, config, category):
+def trainer(model, constants_dict, v_train, ema_helper, config, category):
     with open('readme.txt', 'a') as f:
         f.write(f"\n {category} : ")
     optimizer = build_optimizer(model, config)
@@ -43,13 +43,14 @@ def trainer(model, constants_dict, v, ema_helper, config, category):
     writer = SummaryWriter('runs/DDAD')
 
     for epoch in range(config.model.epochs):
+        print(f"v_train: {v_train}")
         for step, batch in enumerate(trainloader):
             
             t = torch.randint(0, config.model.trajectory_steps, (batch[0].shape[0],), device=config.model.device).long()
 
 
             optimizer.zero_grad()
-            loss = get_loss(model, constants_dict, batch[0], t, v, config) 
+            loss = get_loss(model, constants_dict, batch[0], t, v_train, config) 
             writer.add_scalar('loss', loss, epoch)
 
             loss.backward()
@@ -62,18 +63,18 @@ def trainer(model, constants_dict, v, ema_helper, config, category):
                     f.write(f"\n Epoch {epoch} | Loss: {loss.item()}  |   ")
             # if epoch %50 == 0 and step ==0:
             #     sample_plot_image(model, trainloader, constant_dict, epoch, category, config)
-            if epoch %50 == 0 and step ==0:
-                for v in [0,10,20,30,40,50,60,70,80,90,100]:
-                    print('v_test : ',v,'\n')
-                    with open('readme.txt', 'a') as f:
-                        f.write(f'v_test : {v} \n')
-                    validate(model, constants_dict, config, category, v)
-                #validate(model, constant_dict, config, category)
+            if epoch %100 == 0 and epoch>0 and step ==0:
+                # for v_test in [70]:
+                #     print('v_test : ',v_test,'\n')
+                #     with open('readme.txt', 'a') as f:
+                #         f.write(f'v_test : {v_test} \n')
+                #     validate(model, constants_dict, config, category, v_train)
+                sample_plot_image(model, trainloader, constants_dict, epoch, category, config)
                 if config.model.save_model:
                     model_save_dir = os.path.join(os.getcwd(), config.model.checkpoint_dir)
                     if not os.path.exists(model_save_dir):
                         os.mkdir(model_save_dir)
-                    torch.save(model.state_dict(), os.path.join(config.model.checkpoint_dir, os.path.join(category,str(f'{epoch}+{v}'))), #config.model.checkpoint_name
+                    torch.save(model.state_dict(), os.path.join(config.model.checkpoint_dir, os.path.join(category,str(f'{epoch}+{v_train}'))), #config.model.checkpoint_name
                 )
 
 

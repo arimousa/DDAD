@@ -60,12 +60,12 @@ def train(args, category):
         ema_helper = None
  #   model = torch.nn.DataParallel(model)
     constants_dict = constant(config)
-    for v in [0,10,20,30,40,50,60,70,80,90,100]:
+    for v_train in [10]:
         start = time.time()
-        print('v_train : ',v,'\n')
+        print('v_train : ',v_train,'\n')
         with open('readme.txt', 'a') as f:
-            f.write(f'v_train : v \n')
-        trainer(model, constants_dict, v, ema_helper, config, category)
+            f.write(f'v_train : {v_train} \n')
+        trainer(model, constants_dict, v_train, ema_helper, config, category)
         end = time.time()
         print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
     with open('readme.txt', 'a') as f:
@@ -76,7 +76,7 @@ def evaluate(args, category):
     start = time.time()
     config = OmegaConf.load(args.config)
     model = build_model(config)
-    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir),os.path.join(category,str(250)))) # config.model.checkpoint_name
+    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir),os.path.join(category,'400'))) # config.model.checkpoint_name 300+50
     model.load_state_dict(checkpoint)    
     model.to(config.model.device)
     model.eval()
@@ -88,7 +88,7 @@ def evaluate(args, category):
     else:
         ema_helper = None
     constants_dict = constant(config)
-    for v in [0,10,20,30,40,50,60,70,80,90,100]:
+    for v in [70]:
         print('v_test : ',v,'\n')
         with open('readme.txt', 'a') as f:
             f.write(f'v_test : {v} \n')
