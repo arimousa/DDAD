@@ -96,4 +96,6 @@ def sample_plot_image(model, trainloader, constant_dict, epoch, category, config
             plt.imshow(image_to_show)
             plt.title(i)
     plt.subplots_adjust(wspace=0.4)
+    if category == None:
+        category = 'empty'
     plt.savefig('results/{}backward_process_after_{}_epochs.png'.format(category, epoch))

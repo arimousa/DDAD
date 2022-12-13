@@ -26,10 +26,10 @@ def trainer(model, constants_dict, v_train, ema_helper, config, category):
     with open('readme.txt', 'a') as f:
         f.write(f"\n {category} : ")
     optimizer = build_optimizer(model, config)
-    train_dataset = MVTecDataset(
+    train_dataset = Dataset(
         root= config.data.data_dir,
         category=category,
-        input_size= config.data.image_size,
+        config = config,
         is_train=True,
     )
     trainloader = torch.utils.data.DataLoader(
@@ -39,6 +39,7 @@ def trainer(model, constants_dict, v_train, ema_helper, config, category):
         num_workers=config.model.num_workers,
         drop_last=True,
     )
+
 
     writer = SummaryWriter('runs/DDAD')
 
@@ -63,27 +64,25 @@ def trainer(model, constants_dict, v_train, ema_helper, config, category):
                     f.write(f"\n Epoch {epoch} | Loss: {loss.item()}  |   ")
             # if epoch %50 == 0 and step ==0:
             #     sample_plot_image(model, trainloader, constant_dict, epoch, category, config)
-            if epoch %100 == 0 and epoch>0 and step ==0:
-                # for v_test in [70]:
-                #     print('v_test : ',v_test,'\n')
-                #     with open('readme.txt', 'a') as f:
-                #         f.write(f'v_test : {v_test} \n')
-                #     validate(model, constants_dict, config, category, v_train)
+            if epoch %100 == 0  and step ==0: #and epoch>0
+                for v_test in [70]:
+                    print('v_test : ',v_test,'\n')
+                    with open('readme.txt', 'a') as f:
+                        f.write(f'v_test : {v_test} \n')
+                    validate(model, constants_dict, config, category, v_train)
                 sample_plot_image(model, trainloader, constants_dict, epoch, category, config)
                 if config.model.save_model:
                     model_save_dir = os.path.join(os.getcwd(), config.model.checkpoint_dir)
                     if not os.path.exists(model_save_dir):
                         os.mkdir(model_save_dir)
-                    torch.save(model.state_dict(), os.path.join(config.model.checkpoint_dir, os.path.join(category,str(f'{epoch}+{v_train}'))), #config.model.checkpoint_name
-                )
+                    torch.save(model.state_dict(), os.path.join(config.model.checkpoint_dir,str(f'{epoch}+{v_train}'))) #config.model.checkpoint_name
 
 
     if config.model.save_model:
         model_save_dir = os.path.join(os.getcwd(), config.model.checkpoint_dir)
         if not os.path.exists(model_save_dir):
             os.mkdir(model_save_dir)
-        torch.save(model.state_dict(), os.path.join(config.model.checkpoint_dir, os.path.join(category,str(config.model.epochs))), #config.model.checkpoint_name
-    )
+        torch.save(model.state_dict(), os.path.join(config.model.checkpoint_dir, str(config.model.epochs))) #config.model.checkpoint_name
 
     writer.flush()
     writer.close()

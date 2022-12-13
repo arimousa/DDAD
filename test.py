@@ -16,10 +16,10 @@ from torch.utils.tensorboard import SummaryWriter
 @torch.no_grad()
 def validate(model, constants_dict, config, category, v):
 
-    test_dataset = MVTecDataset(
+    test_dataset = Dataset(
         root= config.data.data_dir,
         category=category,
-        input_size=config.data.image_size,
+        config = config,
         is_train=False,
     )
     testloader = torch.utils.data.DataLoader(
@@ -30,10 +30,10 @@ def validate(model, constants_dict, config, category, v):
         drop_last=False,
     )
 
-    train_dataset = MVTecDataset(
+    train_dataset = Dataset(
         root= config.data.data_dir,
         category=category,
-        input_size= config.data.image_size,
+        config = config,
         is_train=True,
     )
     trainloader = torch.utils.data.DataLoader(
@@ -79,7 +79,7 @@ def validate(model, constants_dict, config, category, v):
         for i in range(0,test_trajectoy_steps)[::-1]:
             t = torch.full((1,), i, device=config.model.device, dtype=torch.long)
             noisy_image = sample_timestep(config, model, constants_dict,  noisy_image.to(config.model.device), t)
-            if i in  [0,5,10,15,20]:
+            if i in  [5,10,15,20,25]:
                 f_image = forward_diffusion_sample(data, t , constants_dict, config)[0]
                 data_forward.append(f_image)
                 data_reconstructed.append(noisy_image)
@@ -94,7 +94,8 @@ def validate(model, constants_dict, config, category, v):
             predictions_max.append( torch.max(pred).item())
             predictions_mean.append( torch.mean(pred).item())
 
-
+        if category == None:
+            category = 'empty'
         visualize(data, noisy_image, targets, anomaly_map, index, category) 
         index = index + data.shape[0] 
 

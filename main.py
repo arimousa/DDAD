@@ -42,7 +42,7 @@ def constant(config):
 
 def build_model(config):
     #model = SimpleUnet()
-    model = UNetModel(256, 64, dropout=0, n_heads=4 ,in_channels=3)
+    model = UNetModel(256, 64, dropout=0, n_heads=4 ,in_channels=config.data.imput_channel)
     return model
 
 
@@ -76,7 +76,7 @@ def evaluate(args, category):
     start = time.time()
     config = OmegaConf.load(args.config)
     model = build_model(config)
-    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir),os.path.join(category,'400'))) # config.model.checkpoint_name 300+50
+    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir),os.path.join(category,'401'))) # config.model.checkpoint_name 300+50
     model.load_state_dict(checkpoint)    
     model.to(config.model.device)
     model.eval()
@@ -117,17 +117,17 @@ if __name__ == "__main__":
 
     args = parse_args()
     torch.manual_seed(42)
-    np.random.seed(42)
+    np.random.seed(42),
+    categories = [ 'hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 
+    'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
     if args.eval:
         print('only evaluation, not training')
-        for category in [ 'hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill',
-                 'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']:
-            evaluate(args, category)
+       # for category in None:# [ 'hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
+        evaluate(args, category = None)
     else:
-        for category in [ 'hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill',
-                 'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']:
-            print(category)
-            train(args, category)
-            evaluate(args, category)
+        # for category in None:#:
+        #     print(category)
+        train(args, category = None)
+        evaluate(args, category = None)
 
         

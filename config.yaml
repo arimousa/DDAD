@@ -1,13 +1,15 @@
 data :
   name: mvtec
-  data_dir: datasets/MVTec
-  category: cable
+  data_dir: datasets/MTD
+  category: None
   image_size:  256
   batch_size: 32
+  mask : True
+  imput_channel : 3
 
 
 model:
-  checkpoint_dir: checkpoints/500250/
+  checkpoint_dir: checkpoints/MDT/
   checkpoint_name: weights
   exp_name: default
   backbone: wide_resnet50_2 #cait_m48_448 wide_resnet50_2
