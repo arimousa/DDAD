@@ -10,13 +10,13 @@ from typing import Callable, List, Tuple, Union
 
 
 class Feature_extractor(nn.Module):
-    def __init__(self , config, out_indices=[2,3]) -> None:
+    def __init__(self , backbone, config, out_indices=[2,3]) -> None:
         super().__init__()
 
         self.config = config
         self.out_indices = out_indices
         self.input_size = config.data.image_size
-        self.backbone = config.model.backbone
+        self.backbone = backbone
         if self.backbone in ["cait_m48_448"]:
             self.feature_extractor = timm.create_model((self.backbone), pretrained=True)
             channels = [768]
@@ -54,12 +54,12 @@ class Feature_extractor(nn.Module):
             feature = self.feature_extractor.patch_embed(x)
             feature = feature + self.feature_extractor.pos_embed
             feature = self.feature_extractor.pos_drop(feature)
-            for i in range(41):  # paper Table 6. Block Index = 40
+            for i in range(40):  # paper Table 6. Block Index = 40
                 feature = self.feature_extractor.blocks[i](feature)
             batch_size, _, num_channels = feature.shape
             feature = self.feature_extractor.norm(feature)
             feature = feature.permute(0, 2, 1)
-            feature = feature.reshape(batch_size, num_channels, self.input_size // 16, self.input_size // 16)
+            feature = feature.reshape(batch_size, num_channels, 448 // 16, 448 // 16)
             return feature
         elif self.backbone in ["resnet18", "wide_resnet50_2"]:
             features = self.feature_extractor(x)

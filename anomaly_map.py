@@ -5,51 +5,57 @@ import torchvision
 
 from utilities import *
 from backbone import *
+from dataset import *
 
 
 
 
-def heat_map(outputs, targets, mean_train_dataset, config, v):
+def heat_map(outputs, targets, config, v ,mean_train_dataset, representation_backbone):
     sigma = 4
     kernel_size = 2*int(4 * sigma + 0.5) +1
-    anomaly_map = torch.zeros([outputs[0].shape[0], 3, int(config.data.image_size), int(config.data.image_size)], device = config.model.device)#distance_map.shape[0]
-
-
-    for output, target in zip(outputs, targets):
-      #  output = F.interpolate(output , size = int(config.data.image_size/8), mode="bilinear")
-      #  target = F.interpolate(target , size = int(config.data.image_size/8), mode="bilinear")
-
-        feature_extractor = Feature_extractor(config, out_indices=[1])
-        feature_extractor.to(config.model.device)
-        outputs_features = feature_extractor(output.to(config.model.device))
-        targets_features = feature_extractor(target.to(config.model.device))
-
-        print('outputs_features : ',outputs_features.shape)   #([32, 512, 32, 32])
-        print('output', output.shape)                         #([32, 3, 256, 256])
-
-
-            
-        distance_map = 1 - F.cosine_similarity(outputs_features.to(config.model.device), targets_features.to(config.model.device),dim=1).to(config.model.device)
-        distance_map = torch.unsqueeze(distance_map, dim=1)
-        distance_map = F.interpolate(distance_map , size = int(config.data.image_size), mode="bilinear")
-
-        distance_map_image = 1 - F.cosine_similarity(outputs_features.to(config.model.device), mean_train_dataset,dim=1).to(config.model.device)
-        distance_map_image = torch.unsqueeze(distance_map_image, dim=1)
-        distance_map_image = F.interpolate(distance_map_image , size = int(config.data.image_size), mode="bilinear")
+    anomaly_score = torch.zeros([outputs[0].shape[0], 3, int(config.data.image_size), int(config.data.image_size)], device = config.model.device)#distance_map.shape[0]
+    
+    distance_map_image = representation_score(outputs[-1], config, mean_train_dataset, representation_backbone)
+    
+    for output in outputs:
         
-        print('distance_map_image : ',torch.mean(distance_map_image))
-        print('distance_map : ',torch.mean(distance_map))
-        anomaly_map += ((v/100)*distance_map + ((100-v)/100)*distance_map_image)
-        #anomaly_map = distance_map + distance_map_image
-       # anomaly_map += (output-target).square()*2 - 1
+      feature_extractor = Feature_extractor(config = config, backbone = "wide_resnet50_2", out_indices=[1])
+      feature_extractor.to(config.model.device)
+      outputs_features = feature_extractor(output.to(config.model.device))
+      targets_features = feature_extractor(targets.to(config.model.device))
+      
+      distance_map = 1 - F.cosine_similarity(outputs_features.to(config.model.device), targets_features.to(config.model.device),dim=1).to(config.model.device)
+      distance_map = torch.unsqueeze(distance_map, dim=1)
+      distance_map = F.interpolate(distance_map , size = int(config.data.image_size), mode="bilinear")
+      anomaly_score += distance_map 
 
-    anomaly_map = gaussian_blur2d(
-        anomaly_map , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
+    print('distance_map_image : ',torch.mean(distance_map_image))
+    print('distance_map : ',torch.mean(anomaly_score))
+
+    anomaly_score = ((100-v)/100)*distance_map_image + ((v)/100)* anomaly_score
+
+
+
+    anomaly_score = gaussian_blur2d(
+        anomaly_score , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
         )
-    # anomaly_map = anomaly_map - torch.min(anomaly_map)
-    # anomaly_map = anomaly_map / torch.max(anomaly_map)
-    anomaly_map = torchvision.transforms.functional.rgb_to_grayscale(anomaly_map)
-    #print('anomaly_map : ',anomaly_map.shape)
+
+    anomaly_score = torchvision.transforms.functional.rgb_to_grayscale(anomaly_score)
+    print( 'anomaly_score : ',torch.mean(anomaly_score))
     
-    return anomaly_map
-    
+    return anomaly_score
+
+
+def representation_score(outputs, config, mean_train_dataset, representation_backbone):
+    if representation_backbone == 'cait_m48_448':
+      feature_extractor = Feature_extractor(config = config, backbone = "cait_m48_448", out_indices=[1])
+      outputs = F.interpolate(outputs , size = 448, mode="bilinear")
+    else :
+      feature_extractor = Feature_extractor(config = config, backbone = "wide_resnet50_2", out_indices=[1])
+    feature_extractor.to(config.model.device)
+    outputs_features = feature_extractor(outputs.to(config.model.device))
+    mean_train_dataset = mean_train_dataset.to(config.model.device)
+    distance_map_image = 1 - F.cosine_similarity(outputs_features.to(config.model.device), mean_train_dataset,dim=1).to(config.model.device)
+    distance_map_image = torch.unsqueeze(distance_map_image, dim=1)
+    distance_map_image = F.interpolate(distance_map_image , size = int(config.data.image_size), mode="bilinear")
+    return distance_map_image

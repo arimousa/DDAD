@@ -54,7 +54,7 @@ class Dataset(torch.utils.data.Dataset):
                     target = torch.zeros([1, image.shape[-2], image.shape[-1]])
                     label = 'good'
                 else :
-                    if image_file.endswith('mask.png'):
+                    if self.config.data.name == 'mvtec':
                         target = Image.open(
                             image_file.replace("/test/", "/ground_truth/").replace(
                                 ".png", "_mask.png"

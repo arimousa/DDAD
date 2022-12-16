@@ -76,10 +76,11 @@ def evaluate(args, category):
     start = time.time()
     config = OmegaConf.load(args.config)
     model = build_model(config)
-    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir),os.path.join(category,'401'))) # config.model.checkpoint_name 300+50
+    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir),category,'300+10')) # config.model.checkpoint_name 300+50
     model.load_state_dict(checkpoint)    
     model.to(config.model.device)
     model.eval()
+  #  model = torch.nn.DataParallel(model)
     if config.model.ema:
         ema_helper = EMAHelper(mu=config.model.ema_rate)
         ema_helper.register(model)
@@ -88,7 +89,7 @@ def evaluate(args, category):
     else:
         ema_helper = None
     constants_dict = constant(config)
-    for v in [70]:
+    for v in [70,75,80,85,90]:
         print('v_test : ',v,'\n')
         with open('readme.txt', 'a') as f:
             f.write(f'v_test : {v} \n')
@@ -118,16 +119,18 @@ if __name__ == "__main__":
     args = parse_args()
     torch.manual_seed(42)
     np.random.seed(42),
-    categories = [ 'hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 
-    'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
+    categories = ['cable', 'bottle', 'carpet',  'leather', 'capsule', 'hazelnut']   #[ 'hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
     if args.eval:
         print('only evaluation, not training')
-       # for category in None:# [ 'hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
-        evaluate(args, category = None)
+        for category in categories:
+            print(category)
+            with open('readme.txt', 'a') as f:
+                f.write(f'categotry : {category} \n')
+            evaluate(args, category = category)
     else:
-        # for category in None:#:
-        #     print(category)
-        train(args, category = None)
-        evaluate(args, category = None)
+        for category in categories:
+            print(category)
+            train(args, category = category)
+            evaluate(args, category = category)
 
         
