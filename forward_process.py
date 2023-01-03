@@ -18,7 +18,7 @@ def forward_diffusion_sample(x_0, t, constant_dict, config):
     """
     sqrt_alphas_cumprod, sqrt_one_minus_alphas_cumprod= constant_dict['sqrt_alphas_cumprod'], constant_dict['sqrt_one_minus_alphas_cumprod']
 
-    noise = get_noise(x_0, t, config)
+    noise = get_noise(x_0, config)
     device = config.model.device
 
     sqrt_alphas_cumprod_t = get_index_from_list(sqrt_alphas_cumprod, t, x_0.shape, config)

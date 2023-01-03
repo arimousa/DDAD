@@ -9,7 +9,7 @@ from sample import *
 
 from noise import *
 
-def visualize(image, noisy_image, GT, anomaly_map, index, category) :
+def visualize(image, noisy_image, GT, pred_mask, anomaly_map, category) :
     for idx, img in enumerate(image):
         plt.figure(figsize=(11,11))
         plt.axis('off')
@@ -29,13 +29,13 @@ def visualize(image, noisy_image, GT, anomaly_map, index, category) :
         plt.title('ground truth')
 
         plt.subplot(1, 5, 4)
-        plt.imshow(show_tensor_mask(anomaly_map[idx]))
+        plt.imshow(show_tensor_mask(pred_mask[idx]))
         plt.title('result')
 
         plt.subplot(1, 5, 5)
         plt.imshow(show_tensor_image(anomaly_map[idx]))
         plt.title('heat map')
-        plt.savefig('results/{}sample{}.png'.format(category,index+idx))
+        plt.savefig('results/{}sample{}.png'.format(category,idx))
         plt.close()
 
 
@@ -46,7 +46,7 @@ def show_tensor_image(image):
         transforms.Lambda(lambda t: t.permute(1, 2, 0)), # CHW to HWC
         transforms.Lambda(lambda t: t * 255.),
         transforms.Lambda(lambda t: t.cpu().numpy().astype(np.uint8)),
-        transforms.ToPILImage(),
+     #   transforms.ToPILImage(),
     ])
 
     # Take first image of batch

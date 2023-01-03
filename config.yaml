@@ -1,7 +1,7 @@
 data :
-  name: mvtec  #mvtec if the dataset is MVTec AD, otherwise, it is the name of your desire dataset
-  data_dir: datasets/MVTec
-  category: None
+  name: mvtec #mtd # mvtec  #mvtec if the dataset is MVTec AD, otherwise, it is the name of your desire dataset
+  data_dir: datasets/MVTec   #MTD    #MVTec
+  category: capsule   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
   image_size:  256
   batch_size: 32
   mask : True
@@ -9,23 +9,23 @@ data :
 
 
 model:
-  checkpoint_dir: checkpoints/500250
+  checkpoint_dir: checkpoints/MVTec   #MTD 
   checkpoint_name: weights
   exp_name: default
-  backbone: wide_resnet50_2 # wide_resnet50_2
-  representation_backbone: wide_resnet50_2 # wide_resnet50_2 cait_m48_448
+  backbone: resnet18 # wide_resnet50_2
   pre_trained: True
   noise : Gaussian # options : [Gaussian, Perlin]
   schedule : linear # options: [linear, quad, const, jsd, sigmoid]
   learning_rate: 0.001
   weight_decay: 0.00001
-  epochs: 1000
-  trajectory_steps: 401
-  skip : 30
+  epochs: 600
+  trajectory_steps: 1000
+  test_trajectoy_steps: 200 
+  generate_time_steps: 800
+  skip : 10
   eta : 0.8
-  test_trajectoy_steps: 400 # 230 cannot reconstruct missed components
   beta_start : 0.0001 # 0.0001
-  beta_end : 0.007  # 0.006 for 300
+  beta_end : 0.02  # 0.006 for 300
   ema : True
   ema_rate : 0.999
   device: 'cuda' #<"cpu", "gpu", "tpu", "ipu">

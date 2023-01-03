@@ -11,7 +11,7 @@ import torch.nn.functional as F
 from train import trainer
 from datetime import timedelta
 from EMA import EMAHelper
-
+from feature_extractor import *
 
 
 def constant(config):
@@ -45,8 +45,9 @@ def build_model(config):
     model = UNetModel(256, 64, dropout=0, n_heads=4 ,in_channels=config.data.imput_channel)
     return model
 
+    
 
-def train(args, category):
+def train(args):
     config = OmegaConf.load(args.config)
     
     model = build_model(config)
@@ -60,23 +61,23 @@ def train(args, category):
         ema_helper = None
  #   model = torch.nn.DataParallel(model)
     constants_dict = constant(config)
-    for v_train in [10]:
-        start = time.time()
-        print('v_train : ',v_train,'\n')
-        with open('readme.txt', 'a') as f:
-            f.write(f'v_train : {v_train} \n')
-        trainer(model, constants_dict, v_train, ema_helper, config, category)
-        end = time.time()
-        print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
+    start = time.time()
+    trainer(model, constants_dict, ema_helper, config)
+    end = time.time()
+    print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
     with open('readme.txt', 'a') as f:
         f.write('\n training time is {}\n'.format(str(timedelta(seconds=end - start))))
 
 
-def evaluate(args, category):
+
+def evaluate(args):
     start = time.time()
     config = OmegaConf.load(args.config)
     model = build_model(config)
-    checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir),category,'300+10')) # config.model.checkpoint_name 300+50
+    if config.data.category:
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'600')) # config.model.checkpoint_name 300+50
+    else:
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '150'))
     model.load_state_dict(checkpoint)    
     model.to(config.model.device)
     model.eval()
@@ -89,11 +90,7 @@ def evaluate(args, category):
     else:
         ema_helper = None
     constants_dict = constant(config)
-    for v in [70,75,80,85,90]:
-        print('v_test : ',v,'\n')
-        with open('readme.txt', 'a') as f:
-            f.write(f'v_test : {v} \n')
-        validate(model, constants_dict, config, category, v)
+    validate(model, constants_dict, config)
     end = time.time()
     print('Test time is ', str(timedelta(seconds=end - start)))
 
@@ -115,22 +112,22 @@ def parse_args():
 
     
 if __name__ == "__main__":
-
+    torch.cuda.empty_cache()
     args = parse_args()
     torch.manual_seed(42)
-    np.random.seed(42),
-    categories = ['cable', 'bottle', 'carpet',  'leather', 'capsule', 'hazelnut']   #[ 'hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
+    np.random.seed(42)
+    torch.manual_seed(42)
+    np.random.seed(42)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(42)
     if args.eval:
-        print('only evaluation, not training')
-        for category in categories:
-            print(category)
-            with open('readme.txt', 'a') as f:
-                f.write(f'categotry : {category} \n')
-            evaluate(args, category = category)
+        print('evaluating')
+        # config = OmegaConf.load(args.config)
+        # constants_dict = constant(config)
+        # fake_real_dataset(args, constants_dict)
+        evaluate(args)
     else:
-        for category in categories:
-            print(category)
-            train(args, category = category)
-            evaluate(args, category = category)
+        train(args)
+        evaluate(args)
 
         
