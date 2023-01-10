@@ -1,7 +1,7 @@
 data :
   name: mvtec #mtd # mvtec  #mvtec if the dataset is MVTec AD, otherwise, it is the name of your desire dataset
   data_dir: datasets/MVTec   #MTD    #MVTec
-  category: capsule   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
+  category: cable   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
   image_size:  256
   batch_size: 32
   mask : True
@@ -12,18 +12,18 @@ model:
   checkpoint_dir: checkpoints/MVTec   #MTD 
   checkpoint_name: weights
   exp_name: default
-  backbone: resnet18 # wide_resnet50_2
+  backbone: resnet18 #resnet34 #resnet18 # wide_resnet50_2
   pre_trained: True
   noise : Gaussian # options : [Gaussian, Perlin]
   schedule : linear # options: [linear, quad, const, jsd, sigmoid]
-  learning_rate: 0.001
-  weight_decay: 0.00001
-  epochs: 600
+  learning_rate: 1e-4 #0.0002
+  weight_decay: 0 #0.00001
+  epochs: 400
   trajectory_steps: 1000
-  test_trajectoy_steps: 200 
+  test_trajectoy_steps: 200 #200 
   generate_time_steps: 800
-  skip : 10
-  eta : 0.8
+  skip : 5
+  sigma : 0.5
   beta_start : 0.0001 # 0.0001
   beta_end : 0.02  # 0.006 for 300
   ema : True
@@ -37,7 +37,6 @@ model:
 metrics:
   image_level_F1Score: True
   image_level_AUROC: True
-  pixel_level_F1Score: True
   pixel_level_AUROC: True
   threshold:
     method: adaptive #options: [adaptive, manual]

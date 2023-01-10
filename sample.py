@@ -4,36 +4,36 @@ from utilities import *
 import tqdm
 from tqdm import tqdm
 
-# #https://github.com/ermongroup/ddim
-# def generalized_steps(x, seq, model, b, config, **kwargs):
-#     with torch.no_grad():
-#         n = x.size(0)
-#         seq_next = [-1] + list(seq[:-1])
-#         x0_preds = []
-#         xs = [x]
-#         for i, j in zip(reversed(seq), reversed(seq_next)):
-#             t = (torch.ones(n) * i).to(x.device)
-#             next_t = (torch.ones(n) * j).to(x.device)
-#             at = compute_alpha(b, t.long(),config)
-#             at_next = compute_alpha(b, next_t.long(),config)
-#             xt = xs[-1].to('cuda')
-#             et = model(xt, t)
-#             x0_t = (xt - et * (1 - at).sqrt()) / at.sqrt()
-#             x0_preds.append(x0_t.to('cpu'))
-#             c1 = (
-#                 kwargs.get("eta", 0) * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()
-#             )
-#             c2 = ((1 - at_next) - c1 ** 2).sqrt()
-#             xt_next = at_next.sqrt() * x0_t + c1 * torch.randn_like(x) + c2 * et
-#             xs.append(xt_next.to('cpu'))
+#https://github.com/ermongroup/ddim
+def generalized_steps(x, seq, model, b, config, **kwargs):
+    with torch.no_grad():
+        n = x.size(0)
+        seq_next = [-1] + list(seq[:-1])
+        x0_preds = []
+        xs = [x]
+        for i, j in zip(reversed(seq), reversed(seq_next)):
+            t = (torch.ones(n) * i).to(x.device)
+            next_t = (torch.ones(n) * j).to(x.device)
+            at = compute_alpha(b, t.long(),config)
+            at_next = compute_alpha(b, next_t.long(),config)
+            xt = xs[-1].to('cuda')
+            et = model(xt, t)
+            x0_t = (xt - et * (1 - at).sqrt()) / at.sqrt()
+            x0_preds.append(x0_t.to('cpu'))
+            c1 = (
+                kwargs.get("eta", 0) * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()
+            )
+            c2 = ((1 - at_next) - c1 ** 2).sqrt()
+            xt_next = at_next.sqrt() * x0_t + c1 * torch.randn_like(x) + c2 * et
+            xs.append(xt_next.to('cpu'))
 
-#     return xs, x0_preds
+    return xs, x0_preds
 
 def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, cls_fn=None, classes=None):
     with torch.no_grad():
         #setup vectors used in the algorithm
-        sigma_0 = 0.5 #0.5
-        etaB = 1 
+        sigma_0 = config.model.sigma #0.5
+        etaB = 1
         etaA = 1
         etaC = 1 
         singulars = H_funcs.singulars()
@@ -66,7 +66,6 @@ def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, cls_fn=N
         seq_next = [-1] + list(seq[:-1])
         x0_preds = []
         xs = [x]
-
         #iterate over the timesteps
         for i, j in zip(reversed(seq), reversed(seq_next)):
             t = (torch.ones(n) * i).to(x.device)

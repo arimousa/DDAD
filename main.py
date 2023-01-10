@@ -75,7 +75,7 @@ def evaluate(args):
     config = OmegaConf.load(args.config)
     model = build_model(config)
     if config.data.category:
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'600')) # config.model.checkpoint_name 300+50
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'900')) # config.model.checkpoint_name 300+50
     else:
         checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '150'))
     model.load_state_dict(checkpoint)    

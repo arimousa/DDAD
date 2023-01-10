@@ -32,22 +32,22 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
     thresholdOpt = thresholds[thresholdOpt_index]
 
     f1 = F1Score()
+    predictions0_1 = (predictions > thresholdOpt).int()
+    for i,(l,p) in enumerate(zip(labels_list, predictions0_1)):
+        print('sample : ', i, ' prediction is: ',p,' label is: ',l,'\n' ) if l != p else None
 
-    f1_scor = f1(predictions, labels_list)
-    f1_score_pixel = f1(resutls_embeddings, GT_embeddings)
+    f1_scor = f1(predictions0_1, labels_list)
 
     if config.metrics.image_level_AUROC:
         print(f'AUROC: {auroc_score}')
-    if config.metrics.image_level_F1Score:
-        print(f'F1SCORE: {f1_scor}')
-    if config.metrics.pixel_level_F1Score:
-        print(f'f1_score_pixel: {f1_score_pixel}')
     if config.metrics.pixel_level_AUROC:
         print(f"auroc_pixel{auroc_pixel} ")
+    if config.metrics.image_level_F1Score:
+        print(f'F1SCORE: {f1_scor}')
 
     with open('readme.txt', 'a') as f:
         f.write(
-            f"AUROC: {auroc_score}       |    auroc_pixel{auroc_pixel}    |     F1SCORE: {f1_scor}    |    f1_score_pixel: {f1_score_pixel}\n")
+            f"AUROC: {auroc_score}       |    auroc_pixel{auroc_pixel}    |     F1SCORE: {f1_scor}   \n")
     roc = roc.reset()
     auroc = auroc.reset()
     f1 = f1.reset()

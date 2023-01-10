@@ -54,9 +54,9 @@ def trainer(model, constants_dict, ema_helper, config):
             
             if config.model.ema:
                 ema_helper.update(model)
-            if epoch % 50 == 0 and step == 0:
+            if epoch % 10 == 0 and step == 0:
                 print(f"Epoch {epoch} | Loss: {loss.item()}")
-            if epoch %50 == 0 and epoch>0 and step ==0:
+            if epoch %100 == 0 and epoch>0 and step ==0:
                 # sample_plot_image(model, trainloader, constant_dict, epoch, category, config)
                 if config.model.save_model:
                     if config.data.category:

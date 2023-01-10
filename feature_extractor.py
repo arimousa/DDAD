@@ -70,15 +70,19 @@ def fake_real_dataset(config, constants_dict):
 
 
 def tune_feature_extractor(constants_dict, config):
-    R_F_dataset = fake_real_dataset(config, constants_dict)
-    R_F_dataloader = torch.utils.data.DataLoader(R_F_dataset, batch_size=config.data.batch_size, shuffle=True)
+    # R_F_dataset = fake_real_dataset(config, constants_dict)
+    # R_F_dataloader = torch.utils.data.DataLoader(R_F_dataset, batch_size=config.data.batch_size, shuffle=True)
     feature_extractor =  timm.create_model(
                         config.model.backbone,
                         pretrained=True,
                         num_classes=2,
                     )
-    print(feature_extractor.get_classifier())
-    num_in_features = feature_extractor.get_classifier().in_features
+    # print(feature_extractor.get_classifier())
+
+
+
+
+    # num_in_features = feature_extractor.get_classifier().in_features
     # feature_extractor.fc = nn.Sequential(
     #     nn.BatchNorm1d(num_in_features),
     #     nn.Linear(num_in_features, 512, bias = True),
@@ -130,10 +134,7 @@ def extract_features(feature_extractor, x, out_indices, config):
     with torch.no_grad():
         feature_extractor.eval()
         reverse_transforms = transforms.Compose([
-            transforms.Lambda(lambda t: (t + 1) / (2)),
-            # transforms.Lambda(lambda t: t * 255.),
-            # transforms.Lambda(lambda t: t.cpu().numpy().astype(np.uint8)),
-            #   transforms.ToPILImage(),
+            transforms.Lambda(lambda t: (t + 1) / (2))
         ])
         x = reverse_transforms(x)
             
@@ -143,9 +144,8 @@ def extract_features(feature_extractor, x, out_indices, config):
         activations = []
         for name, module in feature_extractor.named_children():
             x = module(x)
-            # print('name : ', name)
-            if name in ['layer1', 'layer3']:
-                activations.append(x)
+            if name in ['layer1', 'layer2' ,'layer3']:
+                activations.append(x )
         embeddings = activations[0]
         for feature in activations[1:]:
             layer_embedding = feature
