@@ -2,7 +2,7 @@ import torch
 import torch.nn.functional as F
 from kornia.filters import gaussian_blur2d
 import torchvision
-
+from torchvision.transforms import transforms
 from utilities import *
 from backbone import *
 from dataset import *
@@ -14,83 +14,57 @@ from PIL import Image
 
 def heat_map(outputs, targets, feature_extractor, constants_dict, config):
     sigma = 4
-    kernel_size = 2*int(4 * sigma + 0.5) +1
+    kernel_size = 2 * int(4 * sigma + 0.5) +1
     anomaly_score = 0
     for output, target in zip(outputs, targets):
-      i_d = color_distance(output, target, config)
-      f_d = feature_distance(output, target,feature_extractor, constants_dict, config)
-      print('image_distance : ',torch.mean(i_d))
-      print('feature_distance : ',torch.mean(f_d))
-      
-      visualalize_distance(output, target, i_d, f_d)
+        i_d = color_distance(output, target, config)
+        f_d = feature_distance(output, target, feature_extractor, constants_dict, config)
+        # print('image_distance mean : ',torch.mean(i_d))
+        # print('feature_distance mean : ',torch.mean(f_d))
+        # print('image_distance max : ',torch.max(i_d))
+        # print('feature_distance max : ',torch.max(f_d))
+        
+        visualalize_distance(output, target, i_d, f_d)
 
-      anomaly_score += i_d #(f_d + .4 * i_d)
+        anomaly_score +=  f_d  + .2* i_d #0.7 * f_d  + 0.3 * i_d # .8*
 
     anomaly_score = gaussian_blur2d(
         anomaly_score , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
         )
     anomaly_score = torch.sum(anomaly_score, dim=1).unsqueeze(1)
-    print( 'anomaly_score : ',torch.mean(anomaly_score))
-    
+    # print( 'anomaly_score : ',torch.mean(anomaly_score))
+
     return anomaly_score
 
-def rgb_to_cmyk(r, g, b):
+def rgb_to_cmyk(images):
     RGB_SCALE = 1
     CMYK_SCALE = 100
-    # if (r, g, b) == (0, 0, 0):
-    #     # black
-    #     return 0, 0, 0, CMYK_SCALE
 
-    # rgb [0,255] -> cmy [0,1]
-    c = 1 - r / RGB_SCALE
-    m = 1 - g / RGB_SCALE
-    y = 1 - b / RGB_SCALE
+    cmy = 1 - images / RGB_SCALE
 
-    # extract out k [0, 1]
-    min_cmy = torch.zeros(c.shape, device=c.device)
-
-    c = c.view(-1)
-    m = m.view(-1)
-    y = y.view(-1)
-    min_cmy = min_cmy.view(-1)
-    for i in range(len(c)):
-      min_cmy[i] = min(c[i], m[i], y[i])
-    c = c.view((256,256))
-    m = m.view((256,256))
-    y = y.view((256,256))
-    min_cmy = min_cmy.view((256,256))
-    
-    c = (c - min_cmy) / (1 - min_cmy)
-    m = (m - min_cmy) / (1 - min_cmy)
-    y = (y - min_cmy) / (1 - min_cmy)
+    min_cmy = torch.zeros(images.shape, device=images.device)
+    min_cmy = torch.amin(cmy, dim=1).unsqueeze(1)-.001
+    cmy = (cmy - min_cmy) / (1 - min_cmy)
     k = min_cmy
-
-    # rescale to the range [0,CMYK_SCALE]
-    return c * CMYK_SCALE, m * CMYK_SCALE, y * CMYK_SCALE, k * CMYK_SCALE
+    cmyk = torch.cat((cmy,k), dim=1)
+    return cmyk * CMYK_SCALE
 
 
 def color_distance(image1, image2, config):
     image1 = ((image1 - image1.min())/ (image1.max() - image1.min())) 
     image2 = ((image2 - image2.min())/ (image2.max() - image2.min()))
-    
-    for i, (img1, img2) in enumerate(zip(image1, image2)):
-        c1,m1,y1,k1 = rgb_to_cmyk(img1[0,:,:], img1[1,:,:], img1[2,:,:])
-        c2,m2,y2,k2 = rgb_to_cmyk(img2[0], img2[1], img2[2])
-        img1_cmyk = torch.stack((c1,m1,y1), dim=0)
-        print('img1_cmyk : ',img1_cmyk.shape)
-        img2_cmyk = torch.stack((c2,m2,y2), dim=0)
-        img1_cmyk = img1_cmyk.to(config.model.device)
-        img2_cmyk = img2_cmyk.to(config.model.device)
-        distance_map = torch.abs(img1_cmyk - img2_cmyk).to(config.model.device)
-        distance_map = torch.mean(distance_map, dim=0).unsqueeze(0)
-        if i == 0:
-          batch = distance_map
-        else:
-          batch = torch.cat((batch , distance_map) , dim=0)
-    batch = batch.unsqueeze(1)
-    print('batch :', batch.shape)
-    return batch
 
+    cmyk_image_1 = rgb_to_cmyk(image1)
+    cmyk_image_2 = rgb_to_cmyk(image2)
+
+    cmyk_image_1 = ((cmyk_image_1 - cmyk_image_1.min())/ (cmyk_image_1.max() - cmyk_image_1.min())) 
+    cmyk_image_2 = ((cmyk_image_2 - cmyk_image_2.min())/ (cmyk_image_2.max() - cmyk_image_2.min()))
+
+    distance_map = cmyk_image_1.to(config.model.device) - cmyk_image_2.to(config.model.device) 
+    
+    distance_map = torch.abs(distance_map)
+    distance_map = torch.mean(distance_map, dim=1).unsqueeze(1)
+    return distance_map
 
 
     # distance_map = image1.to(config.model.device) - image2.to(config.model.device) 
@@ -104,22 +78,67 @@ def color_distance(image1, image2, config):
 
 def feature_distance(output, target,feature_extractor, constants_dict, config):
 
-  outputs_features = extract_features(feature_extractor=feature_extractor, x=output.to(config.model.device), out_indices=[2,3], config=config) #feature_extractor(output.to(config.model.device))
-  targets_features = extract_features(feature_extractor=feature_extractor, x=target.to(config.model.device), out_indices=[2,3], config=config) #feature_extractor(target.to(config.model.device))
+    # output = ((output - output.min())/ (output.max() - output.min())) 
+    # target = ((target - target.min())/ (target.max() - target.min())) 
 
-  outputs_features = (outputs_features - outputs_features.min())/ (outputs_features.max() - outputs_features.min())
-  targets_features = (targets_features - targets_features.min())/ (targets_features.max() - targets_features.min())
-  
-  # distance_map = (outputs_features.to(config.model.device) - targets_features.to(config.model.device))
-  # distance_map = torch.abs(distance_map)
-  # distance_map = torch.mean(distance_map, dim=1).unsqueeze(1)
+    # reversed = transforms.Compose([
+    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+    # ])
 
-  distance_map = 1 - F.cosine_similarity(outputs_features.to(config.model.device), targets_features.to(config.model.device), dim=1).to(config.model.device)
-  distance_map = torch.unsqueeze(distance_map, dim=1)
+    # output = reversed(output)
+    # target = reversed(target)
 
-  distance_map = F.interpolate(distance_map , size = int(config.data.image_size), mode="nearest")
+   # print('output : ', output.max(), output.min())
 
-  # distance_map = torch.mean(torch.pow((outputs_features - targets_features), 2), dim=1).unsqueeze(1)
+    outputs_features = extract_features(feature_extractor=feature_extractor, x=output.to(config.model.device), out_indices=[2,3], config=config) 
+    targets_features = extract_features(feature_extractor=feature_extractor, x=target.to(config.model.device), out_indices=[2,3], config=config) 
 
-  return distance_map
+    outputs_features = (outputs_features - outputs_features.min())/ (outputs_features.max() - outputs_features.min())
+    targets_features = (targets_features - targets_features.min())/ (targets_features.max() - targets_features.min())
 
+
+    distance_map = 1 - F.cosine_similarity(outputs_features.to(config.model.device), targets_features.to(config.model.device), dim=1).to(config.model.device)
+    distance_map = torch.unsqueeze(distance_map, dim=1)
+
+    distance_map = F.interpolate(distance_map , size = int(config.data.image_size), mode="bilinear")
+
+
+    return distance_map
+
+
+    # patches1_features = []
+    # patches2_features = []
+    # patch_size = (64, 64)
+    # stride = (32, 32)
+    # print('output : ', output.shape)
+    # # patchify the two images
+    # patches1 = output.unfold(2, patch_size[0], patch_size[0]).unfold(3, patch_size[1], patch_size[1])
+    # patches2 = target.unfold(2, patch_size[0], patch_size[0]).unfold(3, patch_size[1], patch_size[1])
+    # print('patches1 : ', len(patches1))
+    # print('patches[0] : ', patches1[0].shape)
+
+    # patches1 = torch.stack(patches1, dim=0)
+    # patches2 = torch.stack(patches2, dim=0)
+    # print('patches1 stack : ', patches1.shape)
+    # for patch1, patch2 in zip(patches1, patches2):
+    #     patch1_feature = extract_features(feature_extractor=feature_extractor, x=patch1.to(config.model.device), out_indices=[2,3], config=config) 
+    #     patch2_feature = extract_features(feature_extractor=feature_extractor, x=patch2.to(config.model.device), out_indices=[2,3], config=config) 
+    #     patches1_features.append(patch1_feature)
+    #     patches2_features.append(patch2_feature)
+
+    
+    # print('image1 : ', image1.shape)
+
+    # image1 = image1.view(32,3,256,256)
+    # image2 = image2.view(32,3,256,256)
+    # distance_map = 1 - F.cosine_similarity(image1.to(config.model.device), image2.to(config.model.device), dim=1).to(config.model.device)
+    # distance_map = torch.unsqueeze(distance_map, dim=1)
+    # distance_map = F.interpolate(distance_map , size = int(config.data.image_size), mode="bilinear")
+
+# def patchify(img, patch_size):
+#     patches = []
+#     for i in range(0, img.shape[1], patch_size):
+#         for j in range(0, img.shape[2], patch_size):
+#             patch = img[:, i:i+patch_size, j:j+patch_size]
+#             patches.append(patch)
+#     return patches

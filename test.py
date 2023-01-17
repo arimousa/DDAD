@@ -48,12 +48,19 @@ def validate(model, constants_dict, config):
         H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
         data = data.to(config.model.device)
         noisy_image = noisy_image.to(config.model.device)
-        reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, cls_fn=None, classes=None) 
+        # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, cls_fn=None, classes=None) 
+        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.25)
         #reconstructed, _ = generalized_steps(noisy_image, seq, model,  constants_dict['betas'], config)
         data_reconstructed = reconstructed[-1]
 
+        test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps2]).type(torch.int64)
+        seq = range(0, config.model.test_trajectoy_steps2, config.model.skip2)
+        noisy_image = forward_diffusion_sample(data_reconstructed, test_trajectoy_steps, constants_dict, config)[0]
+        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.1)
+        data_reconstructed2 = reconstructed[-1]
+
         forward_list_compare = [data]
-        reconstructed_compare = [data_reconstructed]
+        reconstructed_compare = [data_reconstructed2]
 
         # forward_list_compare.append(forward_diffusion_sample(data, torch.Tensor([4 * config.model.skip]).type(torch.int64), constants_dict, config)[0])
         # reconstructed_compare.append(reconstructed[-5])
@@ -61,7 +68,7 @@ def validate(model, constants_dict, config):
         # forward_list_compare.append(forward_diffusion_sample(data, torch.Tensor([9 * config.model.skip]).type(torch.int64), constants_dict, config)[0])
         # reconstructed_compare.append(reconstructed[-10])
 
-        visulalize_reconstructed(data, reconstructed)
+        visualize_reconstructed(data, reconstructed)
 
         
 

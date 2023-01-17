@@ -46,12 +46,13 @@ def visualalize_distance(output, target, i_d, f_d):
     plt.subplot(1, 4, 4).axis('off')
 
     plt.subplot(1, 4, 1)
-    plt.imshow(show_tensor_image(output))
-    plt.title('output image')
+    plt.imshow(show_tensor_image(target))
+    plt.title('input image')
+    
 
     plt.subplot(1, 4, 2)
-    plt.imshow(show_tensor_image(target))
-    plt.title('target image')
+    plt.imshow(show_tensor_image(output))
+    plt.title('reconstructed image')
 
     plt.subplot(1, 4, 3)
     plt.imshow(show_tensor_image(f_d))
@@ -66,7 +67,7 @@ def visualalize_distance(output, target, i_d, f_d):
     plt.savefig('results/heatmap{}.png'.format(k))
     plt.close()
 
-def visulalize_reconstructed(input, data):
+def visualize_reconstructed(input, data):
     fig, axs = plt.subplots(int(len(data)/5),6)
     row = 0
     col = 1

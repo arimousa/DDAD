@@ -1,7 +1,7 @@
 data :
   name: mvtec #mtd # mvtec  #mvtec if the dataset is MVTec AD, otherwise, it is the name of your desire dataset
   data_dir: datasets/MVTec   #MTD    #MVTec
-  category: cable   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
+  category: metal_nut   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
   image_size:  256
   batch_size: 32
   mask : True
@@ -12,18 +12,22 @@ model:
   checkpoint_dir: checkpoints/MVTec   #MTD 
   checkpoint_name: weights
   exp_name: default
-  backbone: resnet18 #resnet34 #resnet18 # wide_resnet50_2
+  backbone: wide_resnet101_2 #wide_resnet101_2  #resnet18 # wide_resnet50_2 #resnet34
   pre_trained: True
   noise : Gaussian # options : [Gaussian, Perlin]
   schedule : linear # options: [linear, quad, const, jsd, sigmoid]
+  fine_tune : False
   learning_rate: 1e-4 #0.0002
-  weight_decay: 0 #0.00001
-  epochs: 400
+  weight_decay: 0
+  epochs: 1000
   trajectory_steps: 1000
-  test_trajectoy_steps: 200 #200 
+  test_trajectoy_steps: 400 #200 
+  test_trajectoy_steps2: 300
   generate_time_steps: 800
-  skip : 5
+  skip : 40 #10
+  skip2 : 30
   sigma : 0.5
+  eta : 0.99
   beta_start : 0.0001 # 0.0001
   beta_end : 0.02  # 0.006 for 300
   ema : True
@@ -42,3 +46,7 @@ metrics:
     method: adaptive #options: [adaptive, manual]
     manual_image: null
     manual_pixel: null
+
+
+
+

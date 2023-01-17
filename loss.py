@@ -15,7 +15,7 @@ def get_loss(model, constant_dict, x_0, t, config):
     # # x = x_0 * a.sqrt() + e * (1.0 - a).sqrt()
     # output = model(x, t.float())
 
-    # #return (e - output).square().sum(dim=(1, 2, 3)).mean(dim=0)
+    # return (e - output).square().sum(dim=(1, 2, 3)).mean(dim=0)
 
 
     x_0 = x_0.to(config.model.device)
