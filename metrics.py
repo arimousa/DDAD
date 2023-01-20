@@ -34,7 +34,7 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
     f1 = F1Score()
     predictions0_1 = (predictions > thresholdOpt).int()
     for i,(l,p) in enumerate(zip(labels_list, predictions0_1)):
-        print('sample : ', i, ' prediction is: ',p,' label is: ',l,'\n' ) if l != p else None
+        print('sample : ', i, ' prediction is: ',p.item() ,' label is: ',l.item() ,'\n' ) if l != p else None
 
     f1_scor = f1(predictions0_1, labels_list)
 

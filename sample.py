@@ -26,8 +26,8 @@ def my_generalized_steps(y, x, seq, model, b, config, gama):
             # if index < 3:
             # print('gama', gama ** (index+1))
             #x0_t =  x0_t * (1 - (gama ))   + y * (gama)  
-            if index < 1:
-                x0_t = x0_t * (1 - (gama ** (index+1)))   + y * (gama ** (index+1))   
+            #if index < 1:
+            x0_t = x0_t * (1 - (gama ** (index+1)))   + y * (gama ** (index+1))   
             x0_preds.append(x0_t.to('cpu')) 
             c1 = (
                 config.model.eta * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()

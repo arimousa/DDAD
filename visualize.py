@@ -67,45 +67,52 @@ def visualalize_distance(output, target, i_d, f_d):
     plt.savefig('results/heatmap{}.png'.format(k))
     plt.close()
 
-def visualize_reconstructed(input, data):
-    fig, axs = plt.subplots(int(len(data)/5),6)
-    row = 0
-    col = 1
-    axs[0,0].imshow(show_tensor_image(input))
-    axs[0, 0].get_xaxis().set_visible(False)
-    axs[0, 0].get_yaxis().set_visible(False)
-    axs[0,0].set_title('input')
-    for i, img in enumerate(data):
-        axs[row, col].imshow(show_tensor_image(img))
-        axs[row, col].get_xaxis().set_visible(False)
-        axs[row, col].get_yaxis().set_visible(False)
-        axs[row, col].set_title(str(i))
-        col += 1
-        if col == 6:
-            row += 1
-            col = 0
-    col = 6
-    row = int(len(data)/5)
-    remain = col * row - len(data) -1
-    for j in range(remain):
-        col -= 1
-        axs[row-1, col].remove()
-        axs[row-1, col].get_xaxis().set_visible(False)
-        axs[row-1, col].get_yaxis().set_visible(False)
+def visualize_reconstructed(input, data,s):
+    for index in range(5):
+        fig, axs = plt.subplots(int(len(data)/5),6)
+        row = 0
+        col = 1
+        axs[0,0].imshow(show_tensor_image(input[index,:,:,:]))
+        axs[0, 0].get_xaxis().set_visible(False)
+        axs[0, 0].get_yaxis().set_visible(False)
+        axs[0,0].set_title('input')
+        for i, img in enumerate(data):
+            axs[row, col].imshow(show_tensor_image(img[index,:,:,:]))
+            axs[row, col].get_xaxis().set_visible(False)
+            axs[row, col].get_yaxis().set_visible(False)
+            axs[row, col].set_title(str(i))
+            col += 1
+            if col == 6:
+                row += 1
+                col = 0
+        col = 6
+        row = int(len(data)/5)
+        remain = col * row - len(data) -1
+        for j in range(remain):
+            col -= 1
+            axs[row-1, col].remove()
+            axs[row-1, col].get_xaxis().set_visible(False)
+            axs[row-1, col].get_yaxis().set_visible(False)
+            
         
-    
-        
-    plt.subplots_adjust(left=0.1,
-                    bottom=0.1,
-                    right=0.9,
-                    top=0.9,
-                    wspace=0.4,
-                    hspace=0.4)
-    k = 0
-    while os.path.exists('results/reconstructed{}.png'.format(k)):
-        k += 1
-    plt.savefig(f'results/reconstructed{k}.png')
-    plt.close()
+            
+        plt.subplots_adjust(left=0.1,
+                        bottom=0.1,
+                        right=0.9,
+                        top=0.9,
+                        wspace=0.4,
+                        hspace=0.4)
+        k = 0
+        if s==1:
+            while os.path.exists('results/reconstructed{}1.png'.format(k)):
+                k += 1
+            plt.savefig(f'results/reconstructed{k}1.png')
+            plt.close()
+        else:
+            while os.path.exists('results/reconstructed{}2.png'.format(k)):
+                k += 1
+            plt.savefig(f'results/reconstructed{k}2.png')
+            plt.close()
 
 
 def visualize(image, noisy_image, GT, pred_mask, anomaly_map, category) :
