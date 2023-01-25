@@ -68,7 +68,7 @@ def visualalize_distance(output, target, i_d, f_d):
     plt.close()
 
 def visualize_reconstructed(input, data,s):
-    for index in range(5):
+    for index in range(2):
         fig, axs = plt.subplots(int(len(data)/5),6)
         row = 0
         col = 1
@@ -103,50 +103,48 @@ def visualize_reconstructed(input, data,s):
                         wspace=0.4,
                         hspace=0.4)
         k = 0
-        if s==1:
-            while os.path.exists('results/reconstructed{}1.png'.format(k)):
-                k += 1
-            plt.savefig(f'results/reconstructed{k}1.png')
-            plt.close()
-        else:
-            while os.path.exists('results/reconstructed{}2.png'.format(k)):
-                k += 1
-            plt.savefig(f'results/reconstructed{k}2.png')
-            plt.close()
+
+        while os.path.exists(f'results/reconstructed{k}{s}.png'):
+            k += 1
+        plt.savefig(f'results/reconstructed{k}{s}.png')
+        plt.close()
+
 
 
 def visualize(image, noisy_image, GT, pred_mask, anomaly_map, category) :
     for idx, img in enumerate(image):
         plt.figure(figsize=(11,11))
-        plt.subplot(1, 5, 1).axis('off')
-        plt.subplot(1, 5, 2).axis('off')
-        plt.subplot(1, 5, 3).axis('off')
-        plt.subplot(1, 5, 4).axis('off')
-        plt.subplot(1, 5, 5).axis('off')
-        plt.subplot(1, 5, 1)
+        plt.subplot(1, 2, 1).axis('off')
+        plt.subplot(1, 2, 2).axis('off')
+        plt.subplot(1, 2, 1)
         plt.imshow(show_tensor_image(image[idx]))
         plt.title('clear image')
 
-
-        plt.subplot(1, 5, 2)
+        plt.subplot(1, 2, 2)
 
         plt.imshow(show_tensor_image(noisy_image[idx]))
         plt.title('reconstructed image')
-        
+        plt.savefig('results/{}sample{}.png'.format(category,idx))
+        plt.close()
 
-       
-        plt.subplot(1, 5, 3)
+        plt.figure(figsize=(11,11))
+        plt.subplot(1, 3, 1).axis('off')
+        plt.subplot(1, 3, 2).axis('off')
+        plt.subplot(1, 3, 3).axis('off')
+
+        plt.subplot(1, 3, 1)
         plt.imshow(show_tensor_mask(GT[idx]))
         plt.title('ground truth')
 
-        plt.subplot(1, 5, 4)
+
+        plt.subplot(1, 3, 2)
         plt.imshow(show_tensor_mask(pred_mask[idx]))
         plt.title('good' if torch.max(pred_mask[idx]) == 0 else 'bad', color="g" if torch.max(pred_mask[idx]) == 0 else "r")
 
-        plt.subplot(1, 5, 5)
+        plt.subplot(1, 3, 3)
         plt.imshow(show_tensor_image(anomaly_map[idx]))
         plt.title('heat map')
-        plt.savefig('results/{}sample{}.png'.format(category,idx))
+        plt.savefig('results/{}sample{}heatmap.png'.format(category,idx))
         plt.close()
 
 

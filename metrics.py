@@ -19,7 +19,7 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
     GT_embeddings = GT_embeddings.clone().detach().requires_grad_(False)
 
     roc = ROC()
-    auroc = AUROC()
+    auroc = AUROC(task="binary")
 
     fpr, tpr, thresholds = roc(predictions, labels_list)
     auroc_score = auroc(predictions, labels_list)
@@ -46,6 +46,8 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
         print(f'F1SCORE: {f1_scor}')
 
     with open('readme.txt', 'a') as f:
+        f.write(
+            f"{config.data.category} \n")
         f.write(
             f"AUROC: {auroc_score}       |    auroc_pixel{auroc_pixel}    |     F1SCORE: {f1_scor}   \n")
     roc = roc.reset()

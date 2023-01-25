@@ -11,8 +11,9 @@ class Dataset(torch.utils.data.Dataset):
     def __init__(self, root, category, config, is_train=True):
         self.image_transform = transforms.Compose(
             [
-                transforms.Resize((config.data.image_size, config.data.image_size)),
+                transforms.Resize((config.data.image_size, config.data.image_size)),   
                 transforms.ToTensor(), # Scales data into [0,1] 
+                # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 transforms.Lambda(lambda t: (t * 2) - 1) # Scale between [-1, 1] 
             ]
         )

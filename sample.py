@@ -26,8 +26,10 @@ def my_generalized_steps(y, x, seq, model, b, config, gama):
             # if index < 3:
             # print('gama', gama ** (index+1))
             #x0_t =  x0_t * (1 - (gama ))   + y * (gama)  
-            #if index < 1:
-            x0_t = x0_t * (1 - (gama ** (index+1)))   + y * (gama ** (index+1))   
+            # if index < 3:
+            x0_t = x0_t * (1 -gama)   + y * gama
+            gama = gama * .75
+            # x0_t = x0_t * (1 - (gama ** (index+1)))   + y * (gama ** (index+1))   
             x0_preds.append(x0_t.to('cpu')) 
             c1 = (
                 config.model.eta * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()
@@ -64,14 +66,13 @@ def generalized_steps(x, seq, model, b, config, **kwargs):
 
     return xs, x0_preds
 
-def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, cls_fn=None, classes=None):
+def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, gama = .3, cls_fn=None, classes=None):
     with torch.no_grad():
         #setup vectors used in the algorithm
-        sigma_0 = 0.95 #config.model.sigma #0.5
+        sigma_0 = 0.65 # 0makes the same #config.model.sigma #0.5
         etaB = 1
         etaA = 1
         etaC = 1 
-        gama = 1
         singulars = H_funcs.singulars()
         Sigma = torch.zeros(x.shape[1]*x.shape[2]*x.shape[3], device=x.device)
         Sigma[:singulars.shape[0]] = singulars
@@ -124,8 +125,9 @@ def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, cls_fn=N
             # print('(index)/seq_len: ', (index)/seq_len, ' ((seq_len - index)/seq_len): ',  ((seq_len - index)/seq_len))
             # if index < seq_len*.4:
             #     x0_t =  0.6  * x0_t  + 0.4 * y_0    # x0_t =  ((seq_len + index)/(2*seq_len) * x0_t  +  ((seq_len - index)/(2*seq_len)) * y_0)   # x0_t =  0.5  * x0_t  + (0.5 * y_0) # 0.2 * y_0 + 0.8 * x0_t #####################################################################
+            # if index < 3:
             x0_t =  x0_t * (1 - gama)   + y_0 * gama 
-            gama = gama * 0.7
+            gama = gama * 0.85
             #variational inference conditioned on y
             sigma = (1 - at).sqrt()[0, 0, 0, 0] / at.sqrt()[0, 0, 0, 0]
             sigma_next = (1 - at_next).sqrt()[0, 0, 0, 0] / at_next.sqrt()[0, 0, 0, 0]

@@ -1,7 +1,7 @@
 data :
   name: mvtec #mtd # mvtec  #mvtec if the dataset is MVTec AD, otherwise, it is the name of your desire dataset
   data_dir: datasets/MVTec   #MTD    #MVTec
-  category: metal_nut   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
+  category: pill   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
   image_size:  256
   batch_size: 32
   mask : True
@@ -21,11 +21,11 @@ model:
   weight_decay: 0
   epochs: 1000
   trajectory_steps: 1000
-  test_trajectoy_steps: 400 #200 
-  test_trajectoy_steps2: 300
+  test_trajectoy_steps: 300 #200 
+  test_trajectoy_steps2: 250
   generate_time_steps: 800
-  skip : 40 #10
-  skip2 : 30
+  skip : 15 #10
+  skip2 : 25
   sigma : 0.5
   eta : 0.99
   beta_start : 0.0001 # 0.0001

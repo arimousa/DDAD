@@ -48,25 +48,29 @@ def validate(model, constants_dict, config):
         H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
         data = data.to(config.model.device)
         noisy_image = noisy_image.to(config.model.device)
-        # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, cls_fn=None, classes=None) 
-        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.4)
+
+        reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .85, cls_fn=None, classes=None) 
+        #reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.3)
         # reconstructed, _ = generalized_steps(noisy_image, seq, model,  constants_dict['betas'], config)
         data_reconstructed = reconstructed[-1]
 
-        visualize_reconstructed(data, rec_x0,s=1)
+        # visualize_reconstructed(data, rec_x0,s=1)
+        # visualize_reconstructed(data, reconstructed,s=2)
 
-        test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps2]).type(torch.int64)
-        seq = range(0, config.model.test_trajectoy_steps2, config.model.skip2)
-        noisy_image = forward_diffusion_sample(data_reconstructed, test_trajectoy_steps, constants_dict, config)[0]
-        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.2)
-        data_reconstructed = reconstructed[-1]
-        visualize_reconstructed(data, rec_x0,s=2)
+        # test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps2]).type(torch.int64)
+        # seq = range(0, config.model.test_trajectoy_steps2, config.model.skip2)
+        # noisy_image = forward_diffusion_sample(data_reconstructed, test_trajectoy_steps, constants_dict, config)[0]
+        # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .1, cls_fn=None, classes=None) 
+        # # reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.1)
+        # data_reconstructed = reconstructed[-1]
+        # visualize_reconstructed(data, rec_x0,s=3)
+        # visualize_reconstructed(data, reconstructed,s=4)
 
-        forward_list_compare = [data]
-        reconstructed_compare = [data_reconstructed]
+        forward_list_compare = [] # [data]
+        reconstructed_compare = [] # [data_reconstructed]
 
-        # forward_list_compare.append(forward_diffusion_sample(data, torch.Tensor([4 * config.model.skip]).type(torch.int64), constants_dict, config)[0])
-        # reconstructed_compare.append(reconstructed[-5])
+        forward_list_compare.append(data)
+        reconstructed_compare.append(reconstructed[-1])
 
         # forward_list_compare.append(forward_diffusion_sample(data, torch.Tensor([9 * config.model.skip]).type(torch.int64), constants_dict, config)[0])
         # reconstructed_compare.append(reconstructed[-10])
@@ -84,16 +88,17 @@ def validate(model, constants_dict, config):
 
         for pred, label in zip(anomaly_map, labels):
             labels_list.append(0 if label == 'good' else 1)
-            predictions.append( torch.max(pred).item())
+            # predictions.append( 1 if torch.max(pred).item() > 0.1 else 0)
+            predictions.append(torch.max(pred).item() )
 
     
     threshold = metric(labels_list, predictions, anomaly_map_list, GT_list, config)
+    print('threshold: ', threshold)
 
     forward_list = torch.cat(forward_list, dim=0)
     reconstructed_list = torch.cat(reconstructed_list, dim=0)
     anomaly_map_list = torch.cat(anomaly_map_list, dim=0)
-    pred_mask = (anomaly_map_list>threshold).float()
+    pred_mask = (anomaly_map_list> threshold).float()
     GT_list = torch.cat(GT_list, dim=0)
     visualize(forward_list, reconstructed_list, GT_list, pred_mask, anomaly_map_list, config.data.category)
     
-

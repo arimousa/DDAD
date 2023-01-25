@@ -133,7 +133,7 @@ def extract_features(feature_extractor, x, out_indices, config):
         activations = []
         for name, module in feature_extractor.named_children():
             x = module(x)
-            if name in ['layer1',  'layer2',  'layer3']:
+            if name in [ 'layer1', 'layer2', 'layer3']:
                 activations.append(x)
         embeddings = activations[0]
         for feature in activations[1:]:
