@@ -178,33 +178,3 @@ def show_tensor_mask(image):
     return reverse_transforms(image)
         
 
-@torch.no_grad()
-def sample_plot_image(model, trainloader, constant_dict, epoch, category, config):
-    image = next(iter(trainloader))[0]
-    # Sample noise
-    trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps]).type(torch.int64)
-
-    image = forward_diffusion_sample(image, trajectoy_steps, constant_dict, config)[0]
-    num_images = 5
-    trajectory_steps = config.model.trajectory_steps
-    stepsize = int(trajectory_steps/num_images)
-    
-    
-    plt.figure(figsize=(15,15))
-    plt.axis('off')
-    image_to_show =show_tensor_image(image)
-    plt.subplot(1, num_images+1, int(trajectory_steps/stepsize)+1)
-    plt.imshow(image_to_show)
-    plt.title(trajectory_steps)
-    for i in range(0,trajectory_steps-1)[::-1]:
-        t = torch.full((1,), i, device=config.model.device, dtype=torch.long)
-        image = sample_timestep(config, model, constant_dict, image, t)
-        if i % stepsize == 0:
-            plt.subplot(1, num_images+1, int(i/stepsize)+1)
-            image_to_show =show_tensor_image(image.detach().cpu())
-            plt.imshow(image_to_show)
-            plt.title(i)
-    plt.subplots_adjust(wspace=0.4)
-    if category == None:
-        category = 'empty'
-    plt.savefig('results/{}backward_process_after_{}_epochs.png'.format(category, epoch))

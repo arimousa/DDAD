@@ -41,7 +41,7 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
     if config.metrics.image_level_AUROC:
         print(f'AUROC: {auroc_score}')
     if config.metrics.pixel_level_AUROC:
-        print(f"auroc_pixel{auroc_pixel} ")
+        print(f"auroc pixel: {auroc_pixel} ")
     if config.metrics.image_level_F1Score:
         print(f'F1SCORE: {f1_scor}')
 
@@ -49,7 +49,7 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
         f.write(
             f"{config.data.category} \n")
         f.write(
-            f"AUROC: {auroc_score}       |    auroc_pixel{auroc_pixel}    |     F1SCORE: {f1_scor}   \n")
+            f"AUROC: {auroc_score}       |    auroc_pixel: {auroc_pixel}    |     F1SCORE: {f1_scor}   \n")
     roc = roc.reset()
     auroc = auroc.reset()
     f1 = f1.reset()

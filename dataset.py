@@ -13,6 +13,7 @@ class Dataset(torch.utils.data.Dataset):
             [
                 transforms.Resize((config.data.image_size, config.data.image_size)),   
                 transforms.ToTensor(), # Scales data into [0,1] 
+                # transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225]),
                 # transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5)),
                 transforms.Lambda(lambda t: (t * 2) - 1) # Scale between [-1, 1] 
             ]

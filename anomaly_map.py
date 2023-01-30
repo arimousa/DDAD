@@ -28,7 +28,7 @@ def heat_map(outputs, targets, feature_extractor, constants_dict, config):
         
         visualalize_distance(output, target, i_d, f_d)
 
-        anomaly_score += f_d + .8 * i_d #0.7 * f_d  + 0.3 * i_d # .8*
+        anomaly_score += f_d #+ .8 * i_d #0.7 * f_d  + 0.3 * i_d # .8*
 
     anomaly_score = gaussian_blur2d(
         anomaly_score , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
@@ -77,22 +77,34 @@ def feature_distance(output, target,feature_extractor, constants_dict, config):
 
     # output = ((output - output.min())/ (output.max() - output.min())) 
     # target = ((target - target.min())/ (target.max() - target.min())) 
+    if config.model.backbone == 'deit_base_distilled_patch16_384':
+        transform = transforms.Compose([
+        transforms.Resize((384,384)),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
 
-    # reversed = transforms.Compose([
-    #     transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
-    # ])
+    elif config.model.backbone == 'cait_m48_448':
+        transform = transforms.Compose([
+        transforms.Resize((448,448)),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+    else:
+        transform = transforms.Compose([
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
 
-    # output = reversed(output)
-    # target = reversed(target)
+    output = transform(output)
+    target = transform(target)
 
    # print('output : ', output.max(), output.min())
 
     outputs_features = extract_features(feature_extractor=feature_extractor, x=output.to(config.model.device), out_indices=[2,3], config=config) 
     targets_features = extract_features(feature_extractor=feature_extractor, x=target.to(config.model.device), out_indices=[2,3], config=config) 
 
-    outputs_features = ((outputs_features - outputs_features.min())/ (outputs_features.max() - outputs_features.min())).to(config.model.device)
-    targets_features = ((targets_features - targets_features.min())/ (targets_features.max() - targets_features.min())).to(config.model.device)
+    # outputs_features = ((outputs_features - outputs_features.min())/ (outputs_features.max() - outputs_features.min())).to(config.model.device)
+    # targets_features = ((targets_features - targets_features.min())/ (targets_features.max() - targets_features.min())).to(config.model.device)
 
+    # print('outputs_features : ', outputs_features.shape)
 
     cosine_distance = 1 - F.cosine_similarity(outputs_features, targets_features, dim=1).to(config.model.device).unsqueeze(1)
     #euclidian_distance = torch.sqrt(torch.sum((outputs_features - targets_features)**2, dim=1).unsqueeze(1))
@@ -104,39 +116,31 @@ def feature_distance(output, target,feature_extractor, constants_dict, config):
     return distance_map
 
 
-    # patches1_features = []
-    # patches2_features = []
-    # patch_size = (64, 64)
-    # stride = (32, 32)
-    # print('output : ', output.shape)
-    # # patchify the two images
-    # patches1 = output.unfold(2, patch_size[0], patch_size[0]).unfold(3, patch_size[1], patch_size[1])
-    # patches2 = target.unfold(2, patch_size[0], patch_size[0]).unfold(3, patch_size[1], patch_size[1])
-    # print('patches1 : ', len(patches1))
-    # print('patches[0] : ', patches1[0].shape)
 
-    # patches1 = torch.stack(patches1, dim=0)
-    # patches2 = torch.stack(patches2, dim=0)
-    # print('patches1 stack : ', patches1.shape)
-    # for patch1, patch2 in zip(patches1, patches2):
-    #     patch1_feature = extract_features(feature_extractor=feature_extractor, x=patch1.to(config.model.device), out_indices=[2,3], config=config) 
-    #     patch2_feature = extract_features(feature_extractor=feature_extractor, x=patch2.to(config.model.device), out_indices=[2,3], config=config) 
-    #     patches1_features.append(patch1_feature)
-    #     patches2_features.append(patch2_feature)
+def patchify(self, features, return_spatial_info=False):
+    """Convert a tensor into a tensor of respective patches.
+    Args:
+        x: [torch.Tensor, bs x c x w x h]
+    Returns:
+        x: [torch.Tensor, bs * w//stride * h//stride, c, patchsize,
+        patchsize]
+    """
+    padding = int((self.patchsize - 1) / 2)
+    unfolder = torch.nn.Unfold(
+        kernel_size=self.patchsize, stride=self.stride, padding=padding, dilation=1
+    )
+    unfolded_features = unfolder(features)
+    number_of_total_patches = []
+    for s in features.shape[-2:]:
+        n_patches = (
+            s + 2 * padding - 1 * (self.patchsize - 1) - 1
+        ) / self.stride + 1
+        number_of_total_patches.append(int(n_patches))
+    unfolded_features = unfolded_features.reshape(
+        *features.shape[:2], self.patchsize, self.patchsize, -1
+    )
+    unfolded_features = unfolded_features.permute(0, 4, 1, 2, 3)
 
-    
-    # print('image1 : ', image1.shape)
-
-    # image1 = image1.view(32,3,256,256)
-    # image2 = image2.view(32,3,256,256)
-    # distance_map = 1 - F.cosine_similarity(image1.to(config.model.device), image2.to(config.model.device), dim=1).to(config.model.device)
-    # distance_map = torch.unsqueeze(distance_map, dim=1)
-    # distance_map = F.interpolate(distance_map , size = int(config.data.image_size), mode="bilinear")
-
-# def patchify(img, patch_size):
-#     patches = []
-#     for i in range(0, img.shape[1], patch_size):
-#         for j in range(0, img.shape[2], patch_size):
-#             patch = img[:, i:i+patch_size, j:j+patch_size]
-#             patches.append(patch)
-#     return patches
+    if return_spatial_info:
+        return unfolded_features, number_of_total_patches
+    return unfolded_features
