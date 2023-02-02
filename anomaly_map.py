@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from kornia.filters import gaussian_blur2d
 import torchvision
 from torchvision.transforms import transforms
+import math 
 from utilities import *
 from backbone import *
 from dataset import *
@@ -15,10 +16,9 @@ def heat_map(outputs, targets, feature_extractor, constants_dict, config):
     kernel_size = 2 * int(4 * sigma + 0.5) +1
     anomaly_score = 0
     for output, target in zip(outputs, targets):
-        
-        # normalize = transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
-        # output = normalize(output)
-        # target = normalize(target)
+        output = output.to(config.model.device)
+        target = target.to(config.model.device)
+
         i_d = color_distance(output, target, config)
         f_d = feature_distance(output, target, feature_extractor, constants_dict, config)
         # print('image_distance mean : ',torch.mean(i_d))
@@ -98,15 +98,14 @@ def feature_distance(output, target,feature_extractor, constants_dict, config):
 
    # print('output : ', output.max(), output.min())
 
-    outputs_features = extract_features(feature_extractor=feature_extractor, x=output.to(config.model.device), out_indices=[2,3], config=config) 
-    targets_features = extract_features(feature_extractor=feature_extractor, x=target.to(config.model.device), out_indices=[2,3], config=config) 
+    outputs_features = extract_features(feature_extractor=feature_extractor, x=output, out_indices=[2,3], config=config) 
+    targets_features = extract_features(feature_extractor=feature_extractor, x=target, out_indices=[2,3], config=config) 
 
-    # outputs_features = ((outputs_features - outputs_features.min())/ (outputs_features.max() - outputs_features.min())).to(config.model.device)
-    # targets_features = ((targets_features - targets_features.min())/ (targets_features.max() - targets_features.min())).to(config.model.device)
+    # p_id = patchify(outputs_features) - patchify(targets_features)
 
-    # print('outputs_features : ', outputs_features.shape)
+    cosine_distance = 1 - F.cosine_similarity(patchify(outputs_features) , patchify(targets_features), dim=1).to(config.model.device).unsqueeze(1)
+    # cosine_distance = 1 - F.cosine_similarity(outputs_features , targets_features, dim=1).to(config.model.device).unsqueeze(1)
 
-    cosine_distance = 1 - F.cosine_similarity(outputs_features, targets_features, dim=1).to(config.model.device).unsqueeze(1)
     #euclidian_distance = torch.sqrt(torch.sum((outputs_features - targets_features)**2, dim=1).unsqueeze(1))
     # euclidian_distance = torch.cdist(outputs_features, targets_features, p=2)
     # print('euclidian_distance : ', euclidian_distance.shape)
@@ -117,7 +116,7 @@ def feature_distance(output, target,feature_extractor, constants_dict, config):
 
 
 
-def patchify(self, features, return_spatial_info=False):
+def patchify(features, return_spatial_info=False):
     """Convert a tensor into a tensor of respective patches.
     Args:
         x: [torch.Tensor, bs x c x w x h]
@@ -125,22 +124,29 @@ def patchify(self, features, return_spatial_info=False):
         x: [torch.Tensor, bs * w//stride * h//stride, c, patchsize,
         patchsize]
     """
-    padding = int((self.patchsize - 1) / 2)
+    patchsize = 3
+    stride = 1
+    padding = int((patchsize - 1) / 2)
     unfolder = torch.nn.Unfold(
-        kernel_size=self.patchsize, stride=self.stride, padding=padding, dilation=1
+        kernel_size=patchsize, stride=stride, padding=padding, dilation=1
     )
     unfolded_features = unfolder(features)
     number_of_total_patches = []
     for s in features.shape[-2:]:
         n_patches = (
-            s + 2 * padding - 1 * (self.patchsize - 1) - 1
-        ) / self.stride + 1
+            s + 2 * padding - 1 * (patchsize - 1) - 1
+        ) / stride + 1
         number_of_total_patches.append(int(n_patches))
     unfolded_features = unfolded_features.reshape(
-        *features.shape[:2], self.patchsize, self.patchsize, -1
+        *features.shape[:2], patchsize, patchsize, -1
     )
     unfolded_features = unfolded_features.permute(0, 4, 1, 2, 3)
-
+    max_features = torch.mean(unfolded_features, dim=(3,4))
+    features = max_features.reshape(features.shape[0], int(math.sqrt(max_features.shape[1])) , int(math.sqrt(max_features.shape[1])), max_features.shape[-1]).permute(0,3,1,2)
     if return_spatial_info:
         return unfolded_features, number_of_total_patches
-    return unfolded_features
+    return features
+
+
+def unpatch_scores(x, batchsize):
+        return x.reshape(batchsize, -1, *x.shape[1:])

@@ -70,9 +70,9 @@ def fake_real_dataset(config, constants_dict):
             R_F_dataset.append((fake.type(torch.float32), fake_label))
             R_F_dataset.append((real.type(torch.float32), real_label))
             # break
-            if R_F_dataset.__len__() == 60:
-                return R_F_dataset
-    return R_F_dataset
+            # if R_F_dataset.__len__() == 40:
+            #     return R_F_dataset
+        return R_F_dataset
 
 
 

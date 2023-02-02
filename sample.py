@@ -26,9 +26,9 @@ def my_generalized_steps(y, x, seq, model, b, config, gama):
             # if index < 3:
             # print('gama', gama ** (index+1))
             #x0_t =  x0_t * (1 - (gama ))   + y * (gama)  
-            if index <= 5:
-                x0_t = x0_t * (1 -gama)   + y * gama
-                gama = gama * .9
+            # if index <= 5:
+            x0_t = x0_t * (1 -gama)   + y * gama
+            gama = gama * .85
             # x0_t = x0_t * (1 - (gama ** (index+1)))   + y * (gama ** (index+1))   
             x0_preds.append(x0_t.to('cpu')) 
             c1 = (
@@ -127,7 +127,7 @@ def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, gama = .
             #     x0_t =  0.6  * x0_t  + 0.4 * y_0    # x0_t =  ((seq_len + index)/(2*seq_len) * x0_t  +  ((seq_len - index)/(2*seq_len)) * y_0)   # x0_t =  0.5  * x0_t  + (0.5 * y_0) # 0.2 * y_0 + 0.8 * x0_t #####################################################################
             # if index < 3:
             x0_t =  x0_t * (1 - gama)   + y_0 * gama 
-            gama = gama * 0.9
+            gama = gama * 0.85
             #variational inference conditioned on y
             sigma = (1 - at).sqrt()[0, 0, 0, 0] / at.sqrt()[0, 0, 0, 0]
             sigma_next = (1 - at_next).sqrt()[0, 0, 0, 0] / at_next.sqrt()[0, 0, 0, 0]
