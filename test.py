@@ -44,8 +44,8 @@ def validate(model, constants_dict, config):
     for data, targets, labels in testloader:
         data = data.to(config.model.device)
             
-        test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps]).type(torch.int64)
-        noisy_image = forward_diffusion_sample(data, test_trajectoy_steps, constants_dict, config)[0]
+        test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps]).type(torch.int64).to(config.model.device)
+        noisy_image = forward_diffusion_sample(data, test_trajectoy_steps, constants_dict, config)[0].to(config.model.device)
         k = 0
         # while os.path.exists('results/Forward{}_1.png'.format(k)):
         #     k += 1
@@ -56,23 +56,46 @@ def validate(model, constants_dict, config):
         # plt.title('forward 1') 
         # plt.savefig('results/Forward{}_1.png'.format(k))
 
-        r =4
+
+
+        seq = range(0 , config.model.test_trajectoy_steps, config.model.skip)
+        # print('seq : ',seq)
+        # H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
+        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.3, eraly_stop = True)
+        # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .6, cls_fn=None, classes=None) 
+        data_reconstructed = reconstructed[-1]
+
+        plt.figure(figsize=(11,11))
+        plt.subplot(1, 2, 1).axis('off')
+        plt.subplot(1, 2, 2).axis('off')
+        plt.subplot(1, 2, 1)
+        plt.imshow(show_tensor_image(data_reconstructed))
+        plt.title('Reconstructed 1') 
+        plt.subplot(1, 2, 2)
+        plt.imshow(show_tensor_image(rec_x0[-1]))
+        plt.title('Guess 1') 
+        plt.savefig('results/Reconstruct{}_1.png'.format(k))
+
+        r = 6
         for i in range(r):
-            seq = range(config.model.test_trajectoy_steps-config.model.skip, config.model.test_trajectoy_steps, config.model.skip)
-            # H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
+            noisy_image = forward_ti_steps(test_trajectoy_steps, 3 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
             
-            noisy_image = noisy_image.to(config.model.device)
-            reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.2)
-            # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .6, cls_fn=None, classes=None) 
+            reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.3, eraly_stop = True)
             data_reconstructed = reconstructed[-1]
-            while os.path.exists('results/Forward{}_1.png'.format(k)):
-                k += 1
-            plt.figure(figsize=(11,11))
-            plt.subplot(1, 1, 1).axis('off')
-            plt.subplot(1, 1, 1)
-            plt.imshow(show_tensor_image(rec_x0[0]))
-            plt.title('Reconstructed 1') 
-            plt.savefig('results/Reconstruct{}_1.png'.format(k))
+            # j = 0
+            # while os.path.exists('results/guess{}_1.png'.format(j)):
+            #     j += 1
+            # plt.figure(figsize=(11,11))
+            # plt.subplot(1, 2, 1).axis('off')
+            # plt.subplot(1, 2, 2).axis('off')
+            # plt.subplot(1, 2, 1)
+            # plt.imshow(show_tensor_image(rec_x0[-1]))
+            # plt.title('Guess 1') 
+            # plt.subplot(1, 2, 2)
+            # plt.imshow(show_tensor_image(data_reconstructed))
+            # plt.title('rec 1') 
+            # plt.savefig('results/guess{}_1.png'.format(j))
+
 
         # reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.3)
         # reconstructed, _ = generalized_steps(noisy_image, seq, model,  constants_dict['betas'], config)
@@ -81,50 +104,30 @@ def validate(model, constants_dict, config):
         # visualize_reconstructed(data, rec_x0,s=1)
         # visualize_reconstructed(data, reconstructed,s=2)
 
-        test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps2]).type(torch.int64)
         seq = range(0, config.model.test_trajectoy_steps2, config.model.skip2)
-        noisy_image = forward_diffusion_sample(data_reconstructed, test_trajectoy_steps, constants_dict, config)[0]
+        noisy_image = forward_ti_steps(test_trajectoy_steps, 3 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
         # plt.figure(figsize=(11,11))
         # plt.subplot(1, 1, 1).axis('off')
         # plt.subplot(1, 1, 1)
         # plt.imshow(show_tensor_image(noisy_image))
         # plt.title('forward 2') 
-        # plt.savefig('results/Forward{}_2.png'.format(k))
+        # plt.savefig('results/Forward{}_for_last_step.png'.format(k))
         # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .4, cls_fn=None, classes=None) 
-        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.2)
+        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.1, eraly_stop = False)
         data_reconstructed = reconstructed[-1]
 
         plt.figure(figsize=(11,11))
         plt.subplot(1, 1, 1).axis('off')
         plt.subplot(1, 1, 1)
         plt.imshow(show_tensor_image(data_reconstructed))
-        plt.title('Reconstructed 2') 
-        plt.savefig('results/Reconstruct{}_2.png'.format(k))
+        plt.title('Reconstructed') 
+        plt.savefig('results/Reconstruct{}_last_reconstruction.png'.format(k))
 
 
 
 
 
-        # test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps3]).type(torch.int64)
-        # seq = range(0, config.model.test_trajectoy_steps2, config.model.skip3)
-        # noisy_image = forward_diffusion_sample(data_reconstructed, test_trajectoy_steps, constants_dict, config)[0]
-        # # plt.figure(figsize=(11,11))
-        # # plt.subplot(1, 1, 1).axis('off')
-        # # plt.subplot(1, 1, 1)
-        # # plt.imshow(show_tensor_image(noisy_image))
-        # # plt.title('forward 3') 
-        # # plt.savefig('results/Forward{}_3.png'.format(k))
-        # # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .4, cls_fn=None, classes=None) 
-        # reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.1)
-        # data_reconstructed = reconstructed[-1]
-
-        # plt.figure(figsize=(11,11))
-        # plt.subplot(1, 1, 1).axis('off')
-        # plt.subplot(1, 1, 1)
-        # plt.imshow(show_tensor_image(data_reconstructed))
-        # plt.title('Reconstructed 3') 
-        # plt.savefig('results/Reconstruct{}_3.png'.format(k))
-
+        
 
         # visualize_reconstructed(data, rec_x0,s=3)
         # visualize_reconstructed(data, reconstructed,s=4)

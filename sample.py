@@ -6,13 +6,14 @@ from tqdm import tqdm
 
 
 
-def my_generalized_steps(y, x, seq, model, b, config, gama):
+
+def my_generalized_steps(y, x, seq, model, b, config, gama, eraly_stop = True):
     with torch.no_grad():
         n = x.size(0)
         seq_next = [-1] + list(seq[:-1])
         x0_preds = []
         xs = [x]
-        seq_len = len(seq)
+        
         for index, (i, j) in enumerate(zip(reversed(seq), reversed(seq_next))):
             t = (torch.ones(n) * i).to(x.device)
             next_t = (torch.ones(n) * j).to(x.device)
@@ -26,9 +27,9 @@ def my_generalized_steps(y, x, seq, model, b, config, gama):
             # if index < 3:
             # print('gama', gama ** (index+1))
             #x0_t =  x0_t * (1 - (gama ))   + y * (gama)  
-            # if index <= 5:
-            x0_t = x0_t * (1 -gama)   + y * gama
-            gama = gama * .85
+            if index <= 2:
+                x0_t = x0_t * (1 -gama)   + y * gama
+            # gama = gama * .85
             # x0_t = x0_t * (1 - (gama ** (index+1)))   + y * (gama ** (index+1))   
             x0_preds.append(x0_t.to('cpu')) 
             c1 = (
@@ -37,6 +38,9 @@ def my_generalized_steps(y, x, seq, model, b, config, gama):
             c2 = ((1 - at_next) - c1 ** 2).sqrt()
             xt_next = at_next.sqrt() * x0_t + c2 * et  + c1 * torch.randn_like(x)
             xs.append(xt_next.to('cpu'))
+            if eraly_stop:
+                if index == 2:
+                    return xs, x0_preds
 
     return xs, x0_preds
 
@@ -171,11 +175,6 @@ def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, gama = .
 
     return xs, x0_preds
 
-def compute_alpha(beta, t, config):
-    beta = torch.cat([torch.zeros(1).to(beta.device), beta], dim=0)
-    beta = beta.to(config.model.device)
-    a = (1 - beta).cumprod(dim=0).index_select(0, t + 1).view(-1, 1, 1, 1)
-    return a
 
 
 

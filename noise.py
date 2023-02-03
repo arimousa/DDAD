@@ -8,7 +8,7 @@ from perlin_numpy import generate_fractal_noise_3d
 def get_noise(x, config):
     if config.model.noise == 'Gaussian':
      #   torch.manual_seed(0)
-        noise = torch.randn_like(x)
+        noise = torch.randn_like(x).to(config.model.device)
         return noise
 
 

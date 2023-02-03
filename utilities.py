@@ -78,3 +78,9 @@ def get_index_from_list(vals, t, x_shape, config):
     out = vals.gather(-1, t.cpu())
     return out.reshape(batch_size, *((1,) * (len(x_shape) - 1))).to(t.device)
 
+def compute_alpha(beta, t, config):
+    beta = torch.cat([torch.zeros(1).to(beta.device), beta], dim=0)
+    beta = beta.to(config.model.device)
+    a = (1 - beta).cumprod(dim=0).index_select(0, t + 1).view(-1, 1, 1, 1)
+    return a
+

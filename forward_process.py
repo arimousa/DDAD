@@ -34,5 +34,8 @@ def forward_diffusion_sample(x_0, t, constant_dict, config):
 
 
 
-
-
+def forward_ti_steps(t, ti, x_t_ti, x_0, beta, config):
+    x_t_ti = x_t_ti.to(config.model.device)
+    noise = get_noise(x_t_ti, config)
+    x_t = x_t_ti + (compute_alpha(beta, t, config).sqrt() - compute_alpha(beta, t-ti, config).sqrt()) * x_0 + ((1 - compute_alpha(beta, t, config)).sqrt() - (1 - compute_alpha(beta, t-ti, config)).sqrt()) * noise
+    return x_t

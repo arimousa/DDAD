@@ -28,7 +28,7 @@ def heat_map(outputs, targets, feature_extractor, constants_dict, config):
         
         visualalize_distance(output, target, i_d, f_d)
 
-        anomaly_score += f_d #+ .8 * i_d #0.7 * f_d  + 0.3 * i_d # .8*
+        anomaly_score += f_d + .8 * i_d #0.7 * f_d  + 0.3 * i_d # .8*
 
     anomaly_score = gaussian_blur2d(
         anomaly_score , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
@@ -107,6 +107,7 @@ def feature_distance(output, target,feature_extractor, constants_dict, config):
     # cosine_distance = 1 - F.cosine_similarity(outputs_features , targets_features, dim=1).to(config.model.device).unsqueeze(1)
 
     #euclidian_distance = torch.sqrt(torch.sum((outputs_features - targets_features)**2, dim=1).unsqueeze(1))
+    # L1d = torch.sqrt(torch.sum((outputs_features - targets_features), dim=1).unsqueeze(1))
     # euclidian_distance = torch.cdist(outputs_features, targets_features, p=2)
     # print('euclidian_distance : ', euclidian_distance.shape)
     distance_map = F.interpolate(cosine_distance , size = int(config.data.image_size), mode="bilinear")

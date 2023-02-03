@@ -37,11 +37,12 @@ def fake_real_dataset(config, constants_dict):
     R_F_dataset=[]
     print("Start generating fake real dataset")
     for step, batch in tqdm(enumerate(trainloader), total=len(trainloader)):
+        print('step: ',step)
         image = batch[0]
         image = image.to(config.model.device)
         model = build_model(config)
         if config.data.category:
-            checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'300')) # config.model.checkpoint_name 300+50
+            checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'900')) # config.model.checkpoint_name 300+50
         else:
             checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '100'))
         model.load_state_dict(checkpoint)    
@@ -59,7 +60,7 @@ def fake_real_dataset(config, constants_dict):
         transform = transforms.Compose([
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(),
-                transforms.RandomRotation(90),
+                # transforms.RandomRotation(90),
                 transforms.RandomAffine(degrees=20, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=0),
                 ])
         generated_image = transform(generated_image)
@@ -72,7 +73,10 @@ def fake_real_dataset(config, constants_dict):
             # break
             # if R_F_dataset.__len__() == 40:
             #     return R_F_dataset
-        return R_F_dataset
+        
+        if step == 1:
+            return R_F_dataset
+    return R_F_dataset
 
 
 
