@@ -39,7 +39,7 @@ def my_generalized_steps(y, x, seq, model, b, config, gama, eraly_stop = True):
             xt_next = at_next.sqrt() * x0_t + c2 * et  + c1 * torch.randn_like(x)
             xs.append(xt_next.to('cpu'))
             if eraly_stop:
-                if index == 2:
+                if index == 1:
                     return xs, x0_preds
 
     return xs, x0_preds

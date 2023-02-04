@@ -61,7 +61,7 @@ def validate(model, constants_dict, config):
         seq = range(0 , config.model.test_trajectoy_steps, config.model.skip)
         # print('seq : ',seq)
         # H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
-        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.3, eraly_stop = True)
+        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.8, eraly_stop = True)
         # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .6, cls_fn=None, classes=None) 
         data_reconstructed = reconstructed[-1]
 
@@ -76,10 +76,11 @@ def validate(model, constants_dict, config):
         plt.title('Guess 1') 
         plt.savefig('results/Reconstruct{}_1.png'.format(k))
 
-        r = 6
+        r = 7
         for i in range(r):
-            noisy_image = forward_ti_steps(test_trajectoy_steps, 3 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
-            
+            noisy_image = forward_ti_steps(test_trajectoy_steps, 2 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
+            gama = 1 - (0.1 * i) - 0.3
+            # print('gama : ',gama)
             reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.3, eraly_stop = True)
             data_reconstructed = reconstructed[-1]
             # j = 0
@@ -105,7 +106,7 @@ def validate(model, constants_dict, config):
         # visualize_reconstructed(data, reconstructed,s=2)
 
         seq = range(0, config.model.test_trajectoy_steps2, config.model.skip2)
-        noisy_image = forward_ti_steps(test_trajectoy_steps, 3 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
+        noisy_image = forward_ti_steps(test_trajectoy_steps, 2 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
         # plt.figure(figsize=(11,11))
         # plt.subplot(1, 1, 1).axis('off')
         # plt.subplot(1, 1, 1)

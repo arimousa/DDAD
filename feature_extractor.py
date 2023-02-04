@@ -60,8 +60,8 @@ def fake_real_dataset(config, constants_dict):
         transform = transforms.Compose([
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(),
-                # transforms.RandomRotation(90),
-                transforms.RandomAffine(degrees=20, translate=(0.1, 0.1), scale=(0.9, 1.1), shear=0),
+                transforms.RandomRotation(90),
+                transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), scale=(0.9, 1.1), shear=0),
                 ])
         generated_image = transform(generated_image)
 
@@ -71,11 +71,11 @@ def fake_real_dataset(config, constants_dict):
             R_F_dataset.append((fake.type(torch.float32), fake_label))
             R_F_dataset.append((real.type(torch.float32), real_label))
             # break
-            # if R_F_dataset.__len__() == 40:
-            #     return R_F_dataset
+            if R_F_dataset.__len__() == 20:
+                return R_F_dataset
         
-        if step == 1:
-            return R_F_dataset
+        # if step == 1:
+        #     return R_F_dataset
     return R_F_dataset
 
 
@@ -195,7 +195,7 @@ def extract_features(feature_extractor, x, out_indices, config):
             for name, module in feature_extractor.named_children():
                 x = module(x)
                 # print('name : ', name)
-                if name in [ 'layer1', 'layer2', 'layer3']:
+                if name in ['layer1', 'layer2']:
                     activations.append(x)
             embeddings = activations[0]
             for feature in activations[1:]:
