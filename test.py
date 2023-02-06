@@ -14,6 +14,47 @@ from EMA import EMAHelper
 from torch.utils.tensorboard import SummaryWriter
 
 
+def train_data_mean(testloader, feature_extractor, config):
+    train_dataset = Dataset(
+        root= config.data.data_dir,
+        category=config.data.category,
+        config = config,
+        is_train=True,
+    )
+    trainloader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=config.data.batch_size,
+        shuffle=True,
+        num_workers=config.model.num_workers,
+        drop_last=True,
+    )
+    num = 0
+    for step, batch in enumerate(trainloader):
+        data = batch[0].to(config.model.device)
+        feature = extract_features(feature_extractor, data, [1,2,3], config)
+        if step == 0:
+            F_mean = (feature.sum(dim=0) / feature.shape[0])
+        else:
+            F_mean += (feature.sum(dim=0) / feature.shape[0])
+        num += 1
+    F_mean = F_mean / num
+    return F_mean.unsqueeze(0)
+
+
+def cr_function(x, train_mean, feature_extractor, config):
+    x = x.to(config.model.device)
+    x_feature = extract_features(feature_extractor, x, [1,2,3], config)
+
+    cr = torch.sum(torch.abs(x_feature - train_mean),dim=1)
+    cr = F.interpolate(cr.unsqueeze(1), size=(x.shape[2], x.shape[3]), mode='bilinear', align_corners=False)
+    cr = cr.expand(x.shape[0], 3, x.shape[2], x.shape[3])
+    cr = 1/((cr+1)*10)
+    print('cr : ', cr.mean(), cr.max(), cr.min())
+    return cr
+        
+
+
+
 @torch.no_grad()
 def validate(model, constants_dict, config):
 
@@ -34,6 +75,7 @@ def validate(model, constants_dict, config):
 
     
     feature_extractor = tune_feature_extractor(constants_dict, config)
+    f_mean = train_data_mean(testloader, feature_extractor, config)
 
     labels_list = []
     predictions= []
@@ -61,27 +103,43 @@ def validate(model, constants_dict, config):
         seq = range(0 , config.model.test_trajectoy_steps, config.model.skip)
         # print('seq : ',seq)
         # H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
-        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.8, eraly_stop = True)
+        cr = cr_function(data, f_mean, feature_extractor, config)
+        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=20 * cr, eraly_stop = True)
         # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .6, cls_fn=None, classes=None) 
         data_reconstructed = reconstructed[-1]
 
-        plt.figure(figsize=(11,11))
-        plt.subplot(1, 2, 1).axis('off')
-        plt.subplot(1, 2, 2).axis('off')
-        plt.subplot(1, 2, 1)
-        plt.imshow(show_tensor_image(data_reconstructed))
-        plt.title('Reconstructed 1') 
-        plt.subplot(1, 2, 2)
-        plt.imshow(show_tensor_image(rec_x0[-1]))
-        plt.title('Guess 1') 
-        plt.savefig('results/Reconstruct{}_1.png'.format(k))
+        # while os.path.exists('results/cr{}_1.png'.format(k)):
+        #     k += 1
+        # plt.figure(figsize=(11,11))
+        # plt.subplot(1, 2, 1).axis('off')
+        # plt.subplot(1, 2, 2).axis('off')
+        # plt.subplot(1, 2, 1)
+        # plt.imshow(show_tensor_image(data))
+        # plt.title('data') 
+        # plt.subplot(1, 2, 2)
+        # plt.imshow(show_tensor_image(cr*10))
+        # plt.title('cr') 
+        # plt.savefig('results/cr{}_1.png'.format(k))
 
-        r = 7
+
+
+
+        # plt.figure(figsize=(11,11))
+        # plt.subplot(1, 2, 1).axis('off')
+        # plt.subplot(1, 2, 2).axis('off')
+        # plt.subplot(1, 2, 1)
+        # plt.imshow(show_tensor_image(data_reconstructed))
+        # plt.title('Noisy image') 
+        # plt.subplot(1, 2, 2)
+        # plt.imshow(show_tensor_image(rec_x0[-1]))
+        # plt.title('Prediciton') 
+        # plt.savefig('results/Reconstruct{}_1.png'.format(k))
+
+        r = 3
         for i in range(r):
-            noisy_image = forward_ti_steps(test_trajectoy_steps, 2 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
-            gama = 1 - (0.1 * i) - 0.3
+            noisy_image = forward_ti_steps(test_trajectoy_steps, 1 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
             # print('gama : ',gama)
-            reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.3, eraly_stop = True)
+            reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=20 *cr, eraly_stop = True)
             data_reconstructed = reconstructed[-1]
             # j = 0
             # while os.path.exists('results/guess{}_1.png'.format(j)):
@@ -106,7 +164,7 @@ def validate(model, constants_dict, config):
         # visualize_reconstructed(data, reconstructed,s=2)
 
         seq = range(0, config.model.test_trajectoy_steps2, config.model.skip2)
-        noisy_image = forward_ti_steps(test_trajectoy_steps, 2 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
+        noisy_image = forward_ti_steps(test_trajectoy_steps, 1 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
         # plt.figure(figsize=(11,11))
         # plt.subplot(1, 1, 1).axis('off')
         # plt.subplot(1, 1, 1)
@@ -114,15 +172,15 @@ def validate(model, constants_dict, config):
         # plt.title('forward 2') 
         # plt.savefig('results/Forward{}_for_last_step.png'.format(k))
         # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .4, cls_fn=None, classes=None) 
-        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.1, eraly_stop = False)
+        reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=20 *cr, eraly_stop = False)
         data_reconstructed = reconstructed[-1]
 
-        plt.figure(figsize=(11,11))
-        plt.subplot(1, 1, 1).axis('off')
-        plt.subplot(1, 1, 1)
-        plt.imshow(show_tensor_image(data_reconstructed))
-        plt.title('Reconstructed') 
-        plt.savefig('results/Reconstruct{}_last_reconstruction.png'.format(k))
+        # plt.figure(figsize=(11,11))
+        # plt.subplot(1, 1, 1).axis('off')
+        # plt.subplot(1, 1, 1)
+        # plt.imshow(show_tensor_image(data_reconstructed))
+        # plt.title('Reconstructed') 
+        # plt.savefig('results/Reconstruct{}_last_reconstruction.png'.format(k))
 
 
 

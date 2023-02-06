@@ -28,7 +28,7 @@ def heat_map(outputs, targets, feature_extractor, constants_dict, config):
         
         visualalize_distance(output, target, i_d, f_d)
 
-        anomaly_score += f_d + .8 * i_d #0.7 * f_d  + 0.3 * i_d # .8*
+        anomaly_score += f_d + .9 * i_d #0.7 * f_d  + 0.3 * i_d # .8*
 
     anomaly_score = gaussian_blur2d(
         anomaly_score , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
@@ -91,6 +91,7 @@ def feature_distance(output, target,feature_extractor, constants_dict, config):
     else:
         transform = transforms.Compose([
             transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            # transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
         ])
 
     output = transform(output)
@@ -106,7 +107,8 @@ def feature_distance(output, target,feature_extractor, constants_dict, config):
     # cosine_distance = 1 - F.cosine_similarity(patchify(outputs_features) , patchify(targets_features), dim=1).to(config.model.device).unsqueeze(1)
     cosine_distance = 1 - F.cosine_similarity(outputs_features , targets_features, dim=1).to(config.model.device).unsqueeze(1)
 
-    #euclidian_distance = torch.sqrt(torch.sum((outputs_features - targets_features)**2, dim=1).unsqueeze(1))
+    # euclidian_distance = torch.sqrt(torch.sum((outputs_features - targets_features)**2, dim=1).unsqueeze(1))
+    # euclidian_distance = torch.sqrt(torch.sum((patchify(outputs_features) - patchify(targets_features))**2, dim=1).unsqueeze(1))
     # L1d = torch.sqrt(torch.sum((outputs_features - targets_features), dim=1).unsqueeze(1))
     # euclidian_distance = torch.cdist(outputs_features, targets_features, p=2)
     # print('euclidian_distance : ', euclidian_distance.shape)

@@ -42,7 +42,7 @@ def fake_real_dataset(config, constants_dict):
         image = image.to(config.model.device)
         model = build_model(config)
         if config.data.category:
-            checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'900')) # config.model.checkpoint_name 300+50
+            checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'1000')) # config.model.checkpoint_name 300+50
         else:
             checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '100'))
         model.load_state_dict(checkpoint)    
@@ -61,7 +61,7 @@ def fake_real_dataset(config, constants_dict):
                 transforms.RandomHorizontalFlip(),
                 transforms.RandomVerticalFlip(),
                 transforms.RandomRotation(90),
-                transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), scale=(0.9, 1.1), shear=0),
+                transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), scale=(0.8, 1.2), shear=0.1),
                 ])
         generated_image = transform(generated_image)
 
@@ -195,7 +195,7 @@ def extract_features(feature_extractor, x, out_indices, config):
             for name, module in feature_extractor.named_children():
                 x = module(x)
                 # print('name : ', name)
-                if name in ['layer1', 'layer2']:
+                if name in ['layer1', 'layer2', 'layer3']:
                     activations.append(x)
             embeddings = activations[0]
             for feature in activations[1:]:
