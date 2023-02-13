@@ -9,6 +9,8 @@ from backbone import *
 from dataset import *
 from visualize import *
 from feature_extractor import *
+import cv2
+import numpy as np
 
 
 def heat_map(outputs, targets, feature_extractor, constants_dict, config):
@@ -16,19 +18,22 @@ def heat_map(outputs, targets, feature_extractor, constants_dict, config):
     kernel_size = 2 * int(4 * sigma + 0.5) +1
     anomaly_score = 0
     for output, target in zip(outputs, targets):
+        
         output = output.to(config.model.device)
         target = target.to(config.model.device)
 
-        i_d = color_distance(output, target, config)
-        f_d = feature_distance(output, target, feature_extractor, constants_dict, config)
-        # print('image_distance mean : ',torch.mean(i_d))
-        # print('feature_distance mean : ',torch.mean(f_d))
-        # print('image_distance max : ',torch.max(i_d))
-        # print('feature_distance max : ',torch.max(f_d))
+        
+
+        i_d = color_distance(output, target, config)   #torch.sqrt(torch.sum(((output)-(target))**2,dim=1).unsqueeze(1)) #color_distance(output, target, config)        ((output)-(target))**2  #torch.mean(torch.abs((output)-(target)),dim=1).unsqueeze(1)
+        f_d = feature_distance((output),  (target), feature_extractor, constants_dict, config)
+        print('image_distance mean : ',torch.mean(i_d))
+        print('feature_distance mean : ',torch.mean(f_d))
+        print('image_distance max : ',torch.max(i_d))
+        print('feature_distance max : ',torch.max(f_d))
         
         visualalize_distance(output, target, i_d, f_d)
 
-        anomaly_score += f_d + .9 * i_d #0.7 * f_d  + 0.3 * i_d # .8*
+        anomaly_score += f_d + 0.8* i_d # f_d + .9 * i_d #0.7 * f_d  + 0.3 * i_d # .8* #torch.abs(output-target)
 
     anomaly_score = gaussian_blur2d(
         anomaly_score , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)

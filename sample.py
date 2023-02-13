@@ -7,6 +7,7 @@ from tqdm import tqdm
 
 
 
+
 def my_generalized_steps(y, x, seq, model, b, config, gama, eraly_stop = True):
     with torch.no_grad():
         n = x.size(0)
@@ -27,9 +28,9 @@ def my_generalized_steps(y, x, seq, model, b, config, gama, eraly_stop = True):
             # if index < 3:
             # print('gama', gama ** (index+1))
             #x0_t =  x0_t * (1 - (gama ))   + y * (gama)  
-            # if index <= 2:
-            x0_t = x0_t * (1 -gama)   + y * gama
-            # gama = gama * .85
+            if index == 0:
+                x0_t = x0_t * (1 -gama)   + y * gama
+            # gama = gama * .9
             # x0_t = x0_t * (1 - (gama ** (index+1)))   + y * (gama ** (index+1))   
             x0_preds.append(x0_t.to('cpu')) 
             c1 = (
@@ -39,7 +40,7 @@ def my_generalized_steps(y, x, seq, model, b, config, gama, eraly_stop = True):
             xt_next = at_next.sqrt() * x0_t + c2 * et  + c1 * torch.randn_like(x)
             xs.append(xt_next.to('cpu'))
             if eraly_stop:
-                if index == 0:
+                if index == 1:
                     return xs, x0_preds
 
     return xs, x0_preds
@@ -131,7 +132,7 @@ def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, gama = .
             #     x0_t =  0.6  * x0_t  + 0.4 * y_0    # x0_t =  ((seq_len + index)/(2*seq_len) * x0_t  +  ((seq_len - index)/(2*seq_len)) * y_0)   # x0_t =  0.5  * x0_t  + (0.5 * y_0) # 0.2 * y_0 + 0.8 * x0_t #####################################################################
             # if index < 3:
             x0_t =  x0_t * (1 - gama)   + y_0 * gama 
-            gama = gama * 0.85
+            # gama = gama * 0.9
             #variational inference conditioned on y
             sigma = (1 - at).sqrt()[0, 0, 0, 0] / at.sqrt()[0, 0, 0, 0]
             sigma_next = (1 - at_next).sqrt()[0, 0, 0, 0] / at_next.sqrt()[0, 0, 0, 0]
