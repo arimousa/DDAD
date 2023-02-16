@@ -18,22 +18,43 @@ def heat_map(outputs, targets, feature_extractor, constants_dict, config):
     kernel_size = 2 * int(4 * sigma + 0.5) +1
     anomaly_score = 0
     for output, target in zip(outputs, targets):
+
+        if config.model.backbone == 'deit_base_distilled_patch16_384':
+            transform = transforms.Compose([
+            transforms.Resize((384,384)),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ])
+
+        elif config.model.backbone == 'cait_m48_448':
+            transform = transforms.Compose([
+            transforms.Resize((448,448)),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            ])
+        else:
+            transform = transforms.Compose([
+                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+                # transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+            ])
+
+        output = transform(output)
+        target = transform(target)
         
         output = output.to(config.model.device)
         target = target.to(config.model.device)
 
         
 
-        i_d = color_distance(output, target, config)   #torch.sqrt(torch.sum(((output)-(target))**2,dim=1).unsqueeze(1)) #color_distance(output, target, config)        ((output)-(target))**2  #torch.mean(torch.abs((output)-(target)),dim=1).unsqueeze(1)
+        i_d =  torch.sqrt(torch.mean(((output)-(target))**2,dim=1).unsqueeze(1))     # torch.sqrt(torch.mean(((output)-(target))**2,dim=1).unsqueeze(1))   #torch.sqrt(torch.sum(((output)-(target))**2,dim=1).unsqueeze(1)) #color_distance(output, target, config)        ((output)-(target))**2  #torch.mean(torch.abs((output)-(target)),dim=1).unsqueeze(1)
         f_d = feature_distance((output),  (target), feature_extractor, constants_dict, config)
         print('image_distance mean : ',torch.mean(i_d))
         print('feature_distance mean : ',torch.mean(f_d))
         print('image_distance max : ',torch.max(i_d))
         print('feature_distance max : ',torch.max(f_d))
+        # i_d = torch.clamp(i_d, max=f_d.max().item())
         
         visualalize_distance(output, target, i_d, f_d)
 
-        anomaly_score += f_d + 0.8* i_d # f_d + .9 * i_d #0.7 * f_d  + 0.3 * i_d # .8* #torch.abs(output-target)
+        anomaly_score += f_d + 0.7 * i_d # f_d + .9 * i_d #0.7 * f_d  + 0.3 * i_d # .8* #torch.abs(output-target)
 
     anomaly_score = gaussian_blur2d(
         anomaly_score , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
@@ -82,42 +103,24 @@ def feature_distance(output, target,feature_extractor, constants_dict, config):
 
     # output = ((output - output.min())/ (output.max() - output.min())) 
     # target = ((target - target.min())/ (target.max() - target.min())) 
-    if config.model.backbone == 'deit_base_distilled_patch16_384':
-        transform = transforms.Compose([
-        transforms.Resize((384,384)),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
-
-    elif config.model.backbone == 'cait_m48_448':
-        transform = transforms.Compose([
-        transforms.Resize((448,448)),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
-    else:
-        transform = transforms.Compose([
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            # transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-        ])
-
-    output = transform(output)
-    target = transform(target)
+    
 
    # print('output : ', output.max(), output.min())
 
-    outputs_features = extract_features(feature_extractor=feature_extractor, x=output, out_indices=[2,3], config=config) 
-    targets_features = extract_features(feature_extractor=feature_extractor, x=target, out_indices=[2,3], config=config) 
+    outputs_features = extract_features(feature_extractor=feature_extractor, x=output, config=config, out_indices=[ 'layer1']) 
+    targets_features = extract_features(feature_extractor=feature_extractor, x=target, config=config, out_indices=[ 'layer1']) 
 
     # p_id = patchify(outputs_features) - patchify(targets_features)
 
     # cosine_distance = 1 - F.cosine_similarity(patchify(outputs_features) , patchify(targets_features), dim=1).to(config.model.device).unsqueeze(1)
-    cosine_distance = 1 - F.cosine_similarity(outputs_features , targets_features, dim=1).to(config.model.device).unsqueeze(1)
+    # cosine_distance = 1 - F.cosine_similarity(outputs_features , targets_features, dim=1).to(config.model.device).unsqueeze(1)
 
     # euclidian_distance = torch.sqrt(torch.sum((outputs_features - targets_features)**2, dim=1).unsqueeze(1))
-    # euclidian_distance = torch.sqrt(torch.sum((patchify(outputs_features) - patchify(targets_features))**2, dim=1).unsqueeze(1))
+    euclidian_distance = 0.1 * torch.sqrt(torch.sum((patchify(outputs_features) - patchify(targets_features))**2, dim=1).unsqueeze(1))
     # L1d = torch.sqrt(torch.sum((outputs_features - targets_features), dim=1).unsqueeze(1))
     # euclidian_distance = torch.cdist(outputs_features, targets_features, p=2)
     # print('euclidian_distance : ', euclidian_distance.shape)
-    distance_map = F.interpolate(cosine_distance , size = int(config.data.image_size), mode="bilinear")
+    distance_map = F.interpolate(euclidian_distance , size = int(config.data.image_size), mode="bilinear")
 
 
     return distance_map

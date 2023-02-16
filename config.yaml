@@ -1,7 +1,7 @@
 data :
   name: mvtec #mtd # mvtec  #mvtec if the dataset is MVTec AD, otherwise, it is the name of your desire dataset
   data_dir: datasets/MVTec   #MTD    #MVTec
-  category: pill   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
+  category: metal_nut   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
   image_size:  256
   batch_size: 32
   mask : True
@@ -12,22 +12,23 @@ model:
   checkpoint_dir: checkpoints/MVTec   #MTD 
   checkpoint_name: weights
   exp_name: default
-  backbone: wide_resnet101_2 #wide_resnet101_2  #resnet18 # wide_resnet50_2 #resnet34
+  backbone: wide_resnet101_2 #wide_resnet101_2  #resnet18 # wide_resnet50_2 #resnet34 #deit_base_distilled_patch16_384
   pre_trained: True
   noise : Gaussian # options : [Gaussian, Perlin]
   schedule : linear # options: [linear, quad, const, jsd, sigmoid]
-  fine_tune : False
+  fine_tune : True #True #False
   learning_rate: 1e-4 #0.0002
   weight_decay: 0
   epochs: 1000
   trajectory_steps: 1000
-  test_trajectoy_steps: 300 #200 
-  test_trajectoy_steps2: 250
-  generate_time_steps: 800
-  skip : 15 #10
-  skip2 : 25
+  test_trajectoy_steps: 160 #160  
+  test_trajectoy_steps2: 160 #160 
+  generate_time_steps: 900
+  skip : 20 #10
+  skip2 : 40 #20 #60
+  skip_generation : 100 #225
   sigma : 0.5
-  eta : 0.99
+  eta : 1
   beta_start : 0.0001 # 0.0001
   beta_end : 0.02  # 0.006 for 300
   ema : True
@@ -46,6 +47,7 @@ metrics:
     method: adaptive #options: [adaptive, manual]
     manual_image: null
     manual_pixel: null
+
 
 
 

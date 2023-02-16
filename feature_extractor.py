@@ -15,6 +15,7 @@ from visualize import *
 
 
 
+
 def build_model(config):
     #model = SimpleUnet()
     model = UNetModel(256, 64, dropout=0, n_heads=4 ,in_channels=config.data.imput_channel)
@@ -83,69 +84,188 @@ def fake_real_dataset(config, constants_dict):
 
 
 
-def tune_feature_extractor(constants_dict, config):
+def tune_feature_extractor(constants_dict, model, config):
 
     
     
     feature_extractor =  timm.create_model(
                         config.model.backbone,
                         pretrained=True,
-                        num_classes=2,
+                        # num_classes=2,
                     )
-    feature_extractor.to(config.model.device)       
+    feature_extractor.to(config.model.device)    
 
 
 
-
+    train_dataset = Dataset(
+        root= config.data.data_dir,
+        category=config.data.category,
+        config = config,
+        is_train=True,
+    )
+    trainloader = torch.utils.data.DataLoader(
+        train_dataset,
+        batch_size=config.data.batch_size,
+        shuffle=True,
+        num_workers=config.model.num_workers,
+        drop_last=True,
+    )   
     if config.model.fine_tune:
-        R_F_dataset = fake_real_dataset(config, constants_dict)
-        R_F_dataloader = torch.utils.data.DataLoader(R_F_dataset, batch_size=config.data.batch_size, shuffle=True) 
         feature_extractor.train()
-        optimizer = torch.optim.SGD(feature_extractor.parameters(), lr=0.001, momentum=0.9) #config.model.learning_rate
-        criterion =  nn.CrossEntropyLoss()
-        print("Start training feature extractor")
-        for step, batch in enumerate(R_F_dataloader):
-            image = batch[0]
-            label = batch[1]
-            plt.figure(figsize=(11,11))
-            plt.axis('off')
-            plt.subplot(1, 1, 1)
-            plt.imshow(show_tensor_image(image))
-            plt.title(label[0])
-            plt.savefig('results/F_or_R{}.png'.format(step))
-            plt.close()
-            if config.model.backbone == 'deit_base_distilled_patch16_384':
-                transform = transforms.Compose([
-                transforms.Resize((384,384)),
-                ])
-                image = transform(image)
-            elif config.model.backbone == 'cait_m48_448':
-                transform = transforms.Compose([
-                transforms.Resize((448,448)),
-                ])
-                image = transform(image)
-            output = feature_extractor(image)
-            # if epoch ==49:
-            #     for l, o in zip(label, output):
-            #         print('output : ' , o , 'label : ' , l,'\n')
-            loss = criterion(output, label)
-            loss.requires_grad = True
-            optimizer.zero_grad()
 
-            loss.backward()
-            optimizer.step()
+        optimizer = torch.optim.Adam(feature_extractor.parameters(), lr=0.001) #config.model.learning_rate
+        criterion = nn.MSELoss() #nn.CrossEntropyLoss()
+        for epoch in range(1):
+            for step, batch in enumerate(trainloader):
+                data = batch[0]
+                data = data.to(config.model.device)
+                test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps]).type(torch.int64).to(config.model.device)
+                noisy_image = forward_diffusion_sample(data, test_trajectoy_steps, constants_dict, config)[0].to(config.model.device)
+                k = 0
+                seq = range(0 , config.model.test_trajectoy_steps+200, config.model.skip2)
+                # print('seq : ',seq)
+                # H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
+
+                # cr = 0.0
+                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama= 0.2, eraly_stop = False)
+                # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .6, cls_fn=None, classes=None) 
+                data_reconstructed = reconstructed[-1].to(config.model.device)
+
+                # r = 5 + epoch
+                # for i in range(r):
+                #     noisy_image = forward_ti_steps(test_trajectoy_steps, 1 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
+                #     # print('gama : ',gama)
+                #     reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.2, eraly_stop = True)
+                #     data_reconstructed = reconstructed[-1]
+
+                # seq = range(0, config.model.test_trajectoy_steps2, config.model.skip2)
+                # noisy_image = forward_ti_steps(test_trajectoy_steps, 1 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
+                # reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0, eraly_stop = False)
+                # data_reconstructed = reconstructed[-1].to(config.model.device)
+
+                # loss = torch.max(feature_distance(data_reconstructed, data, feature_extractor, constants_dict, config))
+                if config.model.backbone == 'deit_base_distilled_patch16_384':
+                    transform = transforms.Compose([
+                    transforms.Resize((384,384)),
+                    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                    ])
+
+                elif config.model.backbone == 'cait_m48_448':
+                    transform = transforms.Compose([
+                    transforms.Resize((448,448)),
+                    transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+                    ])
+                else:
+                    transform = transforms.Compose([
+                        transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+                        # transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+                    ])
+
+                data_reconstructed = transform(data_reconstructed)
+                data = transform(data)
+                outputs_features = feature_extractor(data_reconstructed) # extract_features(feature_extractor=feature_extractor, x=data_reconstructed, config=config, out_indices='fc') 
+                targets_features = feature_extractor(data) # extract_features(feature_extractor=feature_extractor, x=data, config=config, out_indices='fc') 
+                optimizer.zero_grad()
+
+                # cosine_distance = 1 - F.cosine_similarity(patchify(outputs_features) , patchify(targets_features), dim=1).to(config.model.device).unsqueeze(1)
+                # loss = 1 - F.cosine_similarity(outputs_features , targets_features, dim=1).to(config.model.device).unsqueeze(1)
+                # loss= torch.max(loss)
+                
+                loss = criterion(outputs_features, targets_features)
+                loss.requires_grad = True
+                loss.backward()
+                optimizer.step()
+                if step > 10:
+                    break
+            print(f"Epoch {epoch} | Loss: {loss.item()}")
         if config.data.category:
             torch.save(feature_extractor.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'feature'))
         else:
             torch.save(feature_extractor.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), 'feature'))
+    else:
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'feature'))
+        feature_extractor.load_state_dict(checkpoint)  
+    return feature_extractor 
 
-    return feature_extractor
+
+
+
+    # if config.model.fine_tune:
+    #     R_F_dataset = fake_real_dataset(config, constants_dict)
+    #     R_F_dataloader = torch.utils.data.DataLoader(R_F_dataset, batch_size=config.data.batch_size, shuffle=True) 
+    #     feature_extractor.train()
+    #     optimizer = torch.optim.SGD(feature_extractor.parameters(), lr=0.001, momentum=0.9) #config.model.learning_rate
+    #     criterion =  nn.CrossEntropyLoss()
+    #     print("Start training feature extractor")
+    #     for step, batch in enumerate(R_F_dataloader):
+    #         image = batch[0]
+    #         label = batch[1]
+    #         plt.figure(figsize=(11,11))
+    #         plt.axis('off')
+    #         plt.subplot(1, 1, 1)
+    #         plt.imshow(show_tensor_image(image))
+    #         plt.title(label[0])
+    #         plt.savefig('results/F_or_R{}.png'.format(step))
+    #         plt.close()
+    #         if config.model.backbone == 'deit_base_distilled_patch16_384':
+    #             transform = transforms.Compose([
+    #             transforms.Resize((384,384)),
+    #             ])
+    #             image = transform(image)
+    #         elif config.model.backbone == 'cait_m48_448':
+    #             transform = transforms.Compose([
+    #             transforms.Resize((448,448)),
+    #             ])
+    #             image = transform(image)
+    #         output = feature_extractor(image)
+    #         # if epoch ==49:
+    #         #     for l, o in zip(label, output):
+    #         #         print('output : ' , o , 'label : ' , l,'\n')
+    #         loss = criterion(output, label)
+    #         loss.requires_grad = True
+    #         optimizer.zero_grad()
+
+    #         loss.backward()
+    #         optimizer.step()
+    #     if config.data.category:
+    #         torch.save(feature_extractor.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'feature'))
+    #     else:
+    #         torch.save(feature_extractor.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), 'feature'))
+
+    # return feature_extractor
 
 
 
 
+def feature_distance(output, target,feature_extractor, constants_dict, config):
 
-def extract_features(feature_extractor, x, out_indices, config):
+    # output = ((output - output.min())/ (output.max() - output.min())) 
+    # target = ((target - target.min())/ (target.max() - target.min())) 
+    
+
+   # print('output : ', output.max(), output.min())
+
+    outputs_features = extract_features(feature_extractor=feature_extractor, x=output, config=config) 
+    targets_features = extract_features(feature_extractor=feature_extractor, x=target, config=config) 
+
+    # p_id = patchify(outputs_features) - patchify(targets_features)
+
+    # cosine_distance = 1 - F.cosine_similarity(patchify(outputs_features) , patchify(targets_features), dim=1).to(config.model.device).unsqueeze(1)
+    cosine_distance = 1 - F.cosine_similarity(outputs_features , targets_features, dim=1).to(config.model.device).unsqueeze(1)
+
+    # euclidian_distance = torch.sqrt(torch.sum((outputs_features - targets_features)**2, dim=1).unsqueeze(1))
+    # euclidian_distance = torch.sqrt(torch.sum((patchify(outputs_features) - patchify(targets_features))**2, dim=1).unsqueeze(1))
+    # L1d = torch.sqrt(torch.sum((outputs_features - targets_features), dim=1).unsqueeze(1))
+    # euclidian_distance = torch.cdist(outputs_features, targets_features, p=2)
+    # print('euclidian_distance : ', euclidian_distance.shape)
+    distance_map = F.interpolate(cosine_distance , size = int(config.data.image_size), mode="bilinear")
+
+
+    return distance_map
+
+
+
+def extract_features(feature_extractor, x, config, out_indices=['layer1','layer2','layer3']):
     with torch.no_grad():
         feature_extractor.eval()
         reverse_transforms = transforms.Compose([
@@ -157,7 +277,7 @@ def extract_features(feature_extractor, x, out_indices, config):
             param.requires_grad = False
         feature_extractor.features_only = True
         activations = []
-        if config.model.backbone in['deit_base_distilled_patch16_384']:
+        if config.model.backbone in ['deit_base_distilled_patch16_384']:
             input_size = 384
             x = feature_extractor.patch_embed(x)
             cls_token = feature_extractor.cls_token.expand(x.shape[0], -1, -1)
@@ -195,7 +315,7 @@ def extract_features(feature_extractor, x, out_indices, config):
             for name, module in feature_extractor.named_children():
                 x = module(x)
                 # print('name : ', name)
-                if name in ['layer1']:
+                if name in out_indices:
                     activations.append(x)
             embeddings = activations[0]
             for feature in activations[1:]:

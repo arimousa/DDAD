@@ -5,9 +5,9 @@ import random
 from perlin_numpy import generate_fractal_noise_3d
 
 
-def get_noise(x, config):
+def get_noise(x, config, seed=42):
     if config.model.noise == 'Gaussian':
-     #   torch.manual_seed(0)
+        # torch.manual_seed(seed)
         noise = torch.randn_like(x).to(config.model.device)
         return noise
 

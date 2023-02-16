@@ -31,7 +31,7 @@ def train_data_mean(testloader, feature_extractor, config):
     num = 0
     for step, batch in enumerate(trainloader):
         data = batch[0].to(config.model.device)
-        feature = extract_features(feature_extractor, data, [1,2,3], config)
+        feature = extract_features(feature_extractor, data, config, out_indices=['layer1'])
         if step == 0:
             F_mean = (feature.sum(dim=0) / feature.shape[0])
         else:
@@ -43,7 +43,7 @@ def train_data_mean(testloader, feature_extractor, config):
 
 def cr_function(x, train_mean, feature_extractor, config):
     x = x.to(config.model.device)
-    x_feature = extract_features(feature_extractor, x, [1,2,3], config)
+    x_feature = extract_features(feature_extractor, x, config, out_indices=['layer1'])
 
     cr = torch.sum(torch.abs(x_feature - train_mean),dim=1)
     cr = F.interpolate(cr.unsqueeze(1), size=(x.shape[2], x.shape[3]), mode='bilinear', align_corners=False)
@@ -51,7 +51,6 @@ def cr_function(x, train_mean, feature_extractor, config):
     cr = 1/((cr+1)*10)
     return cr
         
-
 
 
 @torch.no_grad()
@@ -70,7 +69,7 @@ def validate(model, constants_dict, config):
         num_workers= config.model.num_workers,
         drop_last=False,
     )
-    feature_extractor = tune_feature_extractor(constants_dict, config)
+    feature_extractor = tune_feature_extractor(constants_dict, model, config)
     f_mean = train_data_mean(testloader, feature_extractor, config)
 
     labels_list = []
@@ -102,13 +101,13 @@ def validate(model, constants_dict, config):
             seq = range(0 , config.model.test_trajectoy_steps, config.model.skip)
             # print('seq : ',seq)
             # H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
-            cr = cr_function(data, f_mean, feature_extractor, config)
-            # cr = torch.clamp(cr, min=0.1, max=0.3)
-            print('cr old: ', cr.mean(), cr.max(), cr.min())
-            cr = cr * 25 #50
-            cr = torch.clamp(cr, min=0.01, max=0.25)
-            print('cr new: ', cr.mean(), cr.max(), cr.min())
-            cr = 0.2
+            # cr = cr_function(data, f_mean, feature_extractor, config)
+            # # cr = torch.clamp(cr, min=0.1, max=0.3)
+            # print('cr old: ', cr.mean(), cr.max(), cr.min())
+            # cr = cr * 25 #50
+            # cr = torch.clamp(cr, min=0.01, max=0.3)
+            # print('cr new: ', cr.mean(), cr.max(), cr.min())
+            cr = 0.25
             reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama= cr, eraly_stop = True)
             # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .6, cls_fn=None, classes=None) 
             data_reconstructed = reconstructed[-1]
@@ -140,11 +139,11 @@ def validate(model, constants_dict, config):
             # plt.title('Prediciton') 
             # plt.savefig('results/Reconstruct{}_1.png'.format(k))
 
-            r = 5
+            r = 7
             for i in range(r):
-                noisy_image = forward_ti_steps(test_trajectoy_steps, 2 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
+                noisy_image = forward_ti_steps(test_trajectoy_steps, 1 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
                 # print('gama : ',gama)
-                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.5*cr, eraly_stop = True)
+                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=cr, eraly_stop = True)
                 data_reconstructed = reconstructed[-1]
                 # j = 0
                 # while os.path.exists('results/guess{}_1.png'.format(j)):
@@ -169,7 +168,7 @@ def validate(model, constants_dict, config):
             # visualize_reconstructed(data, reconstructed,s=2)
 
             seq = range(0, config.model.test_trajectoy_steps2, config.model.skip2)
-            noisy_image = forward_ti_steps(test_trajectoy_steps, 2 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
+            noisy_image = forward_ti_steps(test_trajectoy_steps, 1 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
             # plt.figure(figsize=(11,11))
             # plt.subplot(1, 1, 1).axis('off')
             # plt.subplot(1, 1, 1)
