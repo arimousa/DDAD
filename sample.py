@@ -3,14 +3,24 @@ from noise import *
 from utilities import *
 import tqdm
 from tqdm import tqdm
+from forward_process import *
 
 
-def my_generalized_steps(y, x, seq, model, b, config, gama, eraly_stop = True):
+def slerp(z1, z2, alpha):
+    theta = torch.acos(torch.sum(z1 * z2) / (torch.norm(z1) * torch.norm(z2)))
+    return (
+        torch.sin((1 - alpha) * theta) / torch.sin(theta) * z1
+        + torch.sin(alpha * theta) / torch.sin(theta) * z2
+    )
+
+
+def my_generalized_steps(y, x, seq, model, b, config, gama, constants_dict, eraly_stop = True):
     with torch.no_grad():
         n = x.size(0)
         seq_next = [-1] + list(seq[:-1])
         x0_preds = []
         xs = [x]
+
         
         for index, (i, j) in enumerate(zip(reversed(seq), reversed(seq_next))):
             t = (torch.ones(n) * i).to(x.device)
@@ -19,16 +29,21 @@ def my_generalized_steps(y, x, seq, model, b, config, gama, eraly_stop = True):
             at_next = compute_alpha(b, next_t.long(),config)
             xt = xs[-1].to('cuda')
             et = model(xt, t)
+
+            noisy_y = forward_diffusion_sample(y, t.type(torch.int64), constants_dict, config)[0].to(config.model.device)
+
+            if index <5:
+                xt = xt * (1 -gama)   + noisy_y * gama
+                # xt = slerp(xt, noisy_y, 0.2)
             x0_t = (xt - et * (1 - at).sqrt()) / at.sqrt()
             # if index == 0:
             #     x0_t =  x0_t * (1 - gama)   + y * gama 
             # if index < 3:
             # print('gama', gama ** (index+1))
             #x0_t =  x0_t * (1 - (gama ))   + y * (gama)  
-            # if index == 0:
-            x0_t = x0_t * (1 -gama)   + y * gama
-            # gama = gama * .9
-            # x0_t = x0_t * (1 - (gama ** (index+1)))   + y * (gama ** (index+1))   
+            # if index < 100:
+            #     x0_t = x0_t * (1 - 0.05)   + y * (0.05)
+            # gama = gama * .99
             x0_preds.append(x0_t.to('cpu')) 
             c1 = (
                 config.model.eta * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()
@@ -68,10 +83,10 @@ def generalized_steps(x, seq, model, b, config, **kwargs):
 
     return xs, x0_preds
 
-def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, gama = .3, cls_fn=None, classes=None):
+def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, gama = .3, cls_fn=None, classes=None, early_stop = False):
     with torch.no_grad():
         #setup vectors used in the algorithm
-        sigma_0 = 0.5 # 0makes the same #config.model.sigma #0.5
+        sigma_0 = 0.1 # 0makes the same #config.model.sigma #0.5
         etaB = 1
         etaA = 1
         etaC = 1
@@ -169,7 +184,8 @@ def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, gama = .
             xt_next = (at_next.sqrt()[0, 0, 0, 0] * xt_mod_next).view(*x.shape)
             x0_preds.append(x0_t.to('cpu'))
             xs.append(xt_next.to('cpu'))
-
+            if early_stop == True:
+                return xs, x0_preds
 
     return xs, x0_preds
 

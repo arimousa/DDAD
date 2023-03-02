@@ -22,33 +22,22 @@ from EMA import EMAHelper
 
 
 
-def trainer(model, constants_dict, ema_helper, config):
-    optimizer = build_optimizer(model, config)
-    if config.data.name == 'MVTec':
-        train_dataset = MVTecDataset(
-            root= config.data.data_dir,
-            category=config.data.category,
-            config = config,
-            is_train=True,
-        )
-        trainloader = torch.utils.data.DataLoader(
-            train_dataset,
-            batch_size=config.data.batch_size,
-            shuffle=True,
-            num_workers=config.model.num_workers,
-            drop_last=True,
-        )
+def trainer2(model, constants_dict, ema_helper, config):
+    optimizer = build_optimizer(model, config) 
+    trainloader = CIFAR10_dataset(config)
+
 
     writer = SummaryWriter('runs/DDAD')
 
     for epoch in range(config.model.epochs):
-        for step, batch in enumerate(trainloader):
+        for step, data in enumerate(trainloader):
+            print('type data is : ',data)
             
-            t = torch.randint(0, config.model.trajectory_steps, (batch[0].shape[0],), device=config.model.device).long()
+            t = torch.randint(0, config.model.trajectory_steps, (data.data.shape[0],), device=config.model.device).long()
 
 
             optimizer.zero_grad()
-            loss = get_loss(model, constants_dict, batch[0], t, config) 
+            loss = get_loss(model, constants_dict, data.data, t, config) 
             loss.backward()
             optimizer.step()
             

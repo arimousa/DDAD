@@ -154,11 +154,11 @@ def tune_feature_extractor(constants_dict, model, config):
 
         optimizer = torch.optim.Adam(feature_extractor.parameters(), lr=0.001) #config.model.learning_rate
         criterion = nn.MSELoss() #nn.CrossEntropyLoss()
-        for epoch in range(5):
+        for epoch in range(0):
             for step, batch in enumerate(trainloader):
                 data = batch[0]
                 data = data.to(config.model.device)
-                test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps2+(epoch*100)]).type(torch.int64).to(config.model.device)
+                test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps2+(epoch * 100)]).type(torch.int64).to(config.model.device)
                 noisy_image = forward_diffusion_sample(data, test_trajectoy_steps, constants_dict, config)[0].to(config.model.device)
                 seq = range(0 , config.model.test_trajectoy_steps2+(epoch * 100), config.model.skip2)
                 # print('seq : ',seq)
@@ -193,7 +193,7 @@ def tune_feature_extractor(constants_dict, model, config):
                         # transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
                     ])  
                 
-                # visualalize_distance(data, data_reconstructed, transform(data), transform(data_reconstructed))
+                visualalize_distance(data, data_reconstructed, transform(data), transform(data_reconstructed))
 
 
                 data_reconstructed = transform(data_reconstructed)

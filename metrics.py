@@ -10,6 +10,7 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
     resutls_embeddings = anomaly_map_list[0]
     for feature in anomaly_map_list[1:]:
         resutls_embeddings = torch.cat((resutls_embeddings, feature), 0)
+    resutls_embeddings =  ((resutls_embeddings - resutls_embeddings.min())/ (resutls_embeddings.max() - resutls_embeddings.min())) 
 
     GT_embeddings = GT_list[0]
     for feature in GT_list[1:]:
@@ -18,7 +19,7 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
     resutls_embeddings = resutls_embeddings.clone().detach().requires_grad_(False)
     GT_embeddings = GT_embeddings.clone().detach().requires_grad_(False)
 
-    roc = ROC()
+    roc = ROC(task="binary")
     auroc = AUROC(task="binary")
 
     fpr, tpr, thresholds = roc(predictions, labels_list)
@@ -31,7 +32,7 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
     thresholdOpt_index = torch.argmax(tpr - fpr)
     thresholdOpt = thresholds[thresholdOpt_index]
 
-    f1 = F1Score()
+    f1 = F1Score(task="binary")
     predictions0_1 = (predictions > thresholdOpt).int()
     for i,(l,p) in enumerate(zip(labels_list, predictions0_1)):
         print('sample : ', i, ' prediction is: ',p.item() ,' label is: ',l.item() ,'\n' ) if l != p else None

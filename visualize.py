@@ -46,20 +46,20 @@ def visualalize_distance(output, target, i_d, f_d):
     plt.subplot(1, 4, 4).axis('off')
 
     plt.subplot(1, 4, 1)
-    plt.imshow(show_tensor_image(target))
+    plt.imshow(show_tensor_image(output))
     plt.title('input image')
     
 
     plt.subplot(1, 4, 2)
-    plt.imshow(show_tensor_image(output))
+    plt.imshow(show_tensor_image(target))
     plt.title('reconstructed image')
 
     plt.subplot(1, 4, 3)
-    plt.imshow(show_tensor_image(f_d))
+    plt.imshow(show_tensor_image(i_d))
     plt.title('feature')
 
     plt.subplot(1, 4, 4)
-    plt.imshow(show_tensor_image(i_d))
+    plt.imshow(show_tensor_image(f_d))
     plt.title('pixel')
     k = 0
     while os.path.exists('results/heatmap{}.png'.format(k)):

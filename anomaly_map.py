@@ -9,52 +9,33 @@ from backbone import *
 from dataset import *
 from visualize import *
 from feature_extractor import *
-import cv2
+# import cv2
 import numpy as np
 
 
-def heat_map(outputs, targets, feature_extractor, constants_dict, config):
+def heat_map(output, target, feature_extractor, constants_dict, config):
     sigma = 4
     kernel_size = 2 * int(4 * sigma + 0.5) +1
     anomaly_score = 0
-    for output, target in zip(outputs, targets):
 
-        if config.model.backbone == 'deit_base_distilled_patch16_384':
-            transform = transforms.Compose([
-            transforms.Resize((384,384)),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
 
-        elif config.model.backbone == 'cait_m48_448':
-            transform = transforms.Compose([
-            transforms.Resize((448,448)),
-            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-            ])
-        else:
-            transform = transforms.Compose([
-                transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-                # transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
-            ])
+    output = output.to(config.model.device)
+    target = target.to(config.model.device)
 
-        output = transform(output)
-        target = transform(target)
-        
-        output = output.to(config.model.device)
-        target = target.to(config.model.device)
-
+    
         
 
-        i_d =  torch.sqrt(torch.mean(((output)-(target))**2,dim=1).unsqueeze(1))     # torch.sqrt(torch.mean(((output)-(target))**2,dim=1).unsqueeze(1))   #torch.sqrt(torch.sum(((output)-(target))**2,dim=1).unsqueeze(1)) #color_distance(output, target, config)        ((output)-(target))**2  #torch.mean(torch.abs((output)-(target)),dim=1).unsqueeze(1)
-        f_d = feature_distance((output),  (target), feature_extractor, constants_dict, config)
-        print('image_distance mean : ',torch.mean(i_d))
-        print('feature_distance mean : ',torch.mean(f_d))
-        print('image_distance max : ',torch.max(i_d))
-        print('feature_distance max : ',torch.max(f_d))
-        # i_d = torch.clamp(i_d, max=f_d.max().item())
-        
-        visualalize_distance(output, target, i_d, f_d)
+    i_d = color_distance(output, target, config) #torch.sqrt(torch.sum(((output)-(target))**2,dim=1).unsqueeze(1)) # 1 - F.cosine_similarity(patchify(output) , patchify(target), dim=1).to(config.model.device).unsqueeze(1) # color_distance(output, target, config) #torch.sqrt(torch.mean(((output)-(target))**2,dim=1).unsqueeze(1))   #torch.sqrt(torch.sum(((output)-(target))**2,dim=1).unsqueeze(1)) #color_distance(output, target, config)        ((output)-(target))**2  #torch.mean(torch.abs((output)-(target)),dim=1).unsqueeze(1)
+    f_d = feature_distance((output),  (target), feature_extractor, constants_dict, config)
+    print('image_distance mean : ',torch.mean(i_d))
+    print('feature_distance mean : ',torch.mean(f_d))
+    print('image_distance max : ',torch.max(i_d))
+    print('feature_distance max : ',torch.max(f_d))
+    # i_d = torch.clamp(i_d, max=f_d.max().item())
+    
+    # visualalize_distance(output, target, i_d, f_d)
 
-        anomaly_score += f_d + 0.7 * i_d # f_d + .9 * i_d #0.7 * f_d  + 0.3 * i_d # .8* #torch.abs(output-target)
+    anomaly_score += f_d  #0.1 * i_d + f_d    # 2 for W5, 4 for W101
 
     anomaly_score = gaussian_blur2d(
         anomaly_score , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
@@ -79,22 +60,48 @@ def rgb_to_cmyk(images):
 
 
 def color_distance(image1, image2, config):
-    image1 = ((image1 - image1.min())/ (image1.max() - image1.min())) 
-    image2 = ((image2 - image2.min())/ (image2.max() - image2.min())) 
+    # image1 = ((image1 - image1.min())/ (image1.max() - image1.min())) 
+    # image2 = ((image2 - image2.min())/ (image2.max() - image2.min()))
+    # image1_1 = (image1 + 1.0)/2.0
+    # image2_2 = (image2 + 1.0)/2.0
+  
+    if config.model.backbone == 'deit_base_distilled_patch16_384':
+        transform = transforms.Compose([
+        transforms.Resize((384,384)),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+
+    elif config.model.backbone == 'cait_m48_448':
+        transform = transforms.Compose([
+        transforms.Resize((448,448)),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+    else:
+        transform = transforms.Compose([
+            transforms.CenterCrop(224), 
+            # transforms.Lambda(lambda t: (t + 1) / (2)),
+
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            # transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        ])
+
+    image1 = transform(image1)
+    image2 = transform(image2)
+    # visualalize_distance(image1_1, image2_2, image1, image2)
 
     cmyk_image_1 = rgb_to_cmyk(image1)
     cmyk_image_2 = rgb_to_cmyk(image2)
 
-    cmyk_image_1 = ((cmyk_image_1 - cmyk_image_1.min())/ (cmyk_image_1.max() - cmyk_image_1.min())).to(config.model.device)
-    cmyk_image_2 = ((cmyk_image_2 - cmyk_image_2.min())/ (cmyk_image_2.max() - cmyk_image_2.min())).to(config.model.device)
+    # cmyk_image_1 = ((cmyk_image_1 - cmyk_image_1.min())/ (cmyk_image_1.max() - cmyk_image_1.min())).to(config.model.device)
+    # cmyk_image_2 = ((cmyk_image_2 - cmyk_image_2.min())/ (cmyk_image_2.max() - cmyk_image_2.min())).to(config.model.device)
 
     # distance_map = 1 - F.cosine_similarity(cmyk_image_1, cmyk_image_2, dim=1).to(config.model.device).unsqueeze(1)
 
-    distance_map = (cmyk_image_1 - cmyk_image_2)
-    distance_map = torch.abs(distance_map)
-    distance_map = torch.mean(distance_map, dim=1).unsqueeze(1)
-
-
+    # distance_map = (cmyk_image_1 - cmyk_image_2)**2
+    # distance_map = 1 - F.cosine_similarity((image1) , (image2), dim=1).to(config.model.device).unsqueeze(1)
+    # distance_map = torch.mean(distance_map, dim=1).unsqueeze(1)
+    distance_map = torch.mean(((image1) - (image2))**2, dim=1).unsqueeze(1)
+    distance_map = F.interpolate(distance_map , size = int(config.data.image_size), mode="bilinear")
     return distance_map
 
 
@@ -102,28 +109,64 @@ def color_distance(image1, image2, config):
 def feature_distance(output, target,feature_extractor, constants_dict, config):
 
     # output = ((output - output.min())/ (output.max() - output.min())) 
-    # target = ((target - target.min())/ (target.max() - target.min())) 
-    
+    # target = ((target - target.min())/ (target.max() - target.min()))
+    # output = (output + 1.0)/2.0
+    # target = (target + 1.0)/2.0
+    if config.model.backbone == 'deit_base_distilled_patch16_384':
+        transform = transforms.Compose([
+        transforms.CenterCrop(224), 
+        transforms.Resize((384,384)),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
 
-   # print('output : ', output.max(), output.min())
+    elif config.model.backbone == 'cait_m48_448':
+        transform = transforms.Compose([
+        transforms.CenterCrop(224), 
+        transforms.Resize((448,448)),
+        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+        ])
+    else:
+        transform = transforms.Compose([
+            transforms.CenterCrop(224), 
+            transforms.Lambda(lambda t: (t + 1) / (2)),
+            transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
+            # transforms.Normalize([0.5, 0.5, 0.5], [0.5, 0.5, 0.5])
+        ])
 
-    outputs_features = extract_features(feature_extractor=feature_extractor, x=output, config=config, out_indices=[ 'layer1']) 
-    targets_features = extract_features(feature_extractor=feature_extractor, x=target, config=config, out_indices=[ 'layer1']) 
+    output = transform(output)
+    target = transform(target)
+
+    outputs_features = extract_features(feature_extractor=feature_extractor, x=output, config=config, out_indices=['layer1']) 
+    targets_features = extract_features(feature_extractor=feature_extractor, x=target, config=config, out_indices=['layer1']) 
 
     # p_id = patchify(outputs_features) - patchify(targets_features)
 
-    # cosine_distance = 1 - F.cosine_similarity(patchify(outputs_features) , patchify(targets_features), dim=1).to(config.model.device).unsqueeze(1)
-    # cosine_distance = 1 - F.cosine_similarity(outputs_features , targets_features, dim=1).to(config.model.device).unsqueeze(1)
+    cosine_distance = 1 - F.cosine_similarity(patchify(outputs_features) , patchify(targets_features), dim=1).to(config.model.device).unsqueeze(1)
 
-    # euclidian_distance = torch.sqrt(torch.sum((outputs_features - targets_features)**2, dim=1).unsqueeze(1))
-    euclidian_distance = 0.1 * torch.sqrt(torch.sum((patchify(outputs_features) - patchify(targets_features))**2, dim=1).unsqueeze(1))
-    # L1d = torch.sqrt(torch.sum((outputs_features - targets_features), dim=1).unsqueeze(1))
-    # euclidian_distance = torch.cdist(outputs_features, targets_features, p=2)
-    # print('euclidian_distance : ', euclidian_distance.shape)
-    distance_map = F.interpolate(euclidian_distance , size = int(config.data.image_size), mode="bilinear")
+    outputs_features2 = extract_features(feature_extractor=feature_extractor, x=output, config=config, out_indices=['layer2']) 
+    targets_features2 = extract_features(feature_extractor=feature_extractor, x=target, config=config, out_indices=['layer2']) 
 
 
-    return distance_map
+    cosine_distance2 = 1 - F.cosine_similarity((outputs_features2) , (targets_features2), dim=1).to(config.model.device).unsqueeze(1)
+
+
+    outputs_features3 = extract_features(feature_extractor=feature_extractor, x=output, config=config, out_indices=['layer3']) 
+    targets_features3 = extract_features(feature_extractor=feature_extractor, x=target, config=config, out_indices=['layer3']) 
+
+
+    cosine_distance3 = 1 - F.cosine_similarity((outputs_features3) , (targets_features3), dim=1).to(config.model.device).unsqueeze(1)
+
+
+
+    distance_map = F.interpolate(cosine_distance , size = int(config.data.image_size), mode="bilinear")
+    distance_map2 = F.interpolate(cosine_distance2 , size = int(config.data.image_size), mode="bilinear")
+    distance_map3 = F.interpolate(cosine_distance3 , size = int(config.data.image_size), mode="bilinear")
+
+
+    distance_map_t = ( distance_map +  distance_map2 +  distance_map3)  /3
+
+
+    return distance_map_t
 
 
 

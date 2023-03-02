@@ -9,9 +9,12 @@ from omegaconf import OmegaConf
 from utilities import *
 import torch.nn.functional as F
 from train import trainer
+from train_2 import trainer2
 from datetime import timedelta
 from EMA import EMAHelper
 from feature_extractor import *
+
+os.environ['CUDA_VISIBLE_DEVICES'] = "0,1,2,3"
 
 
 def constant(config):
@@ -56,10 +59,13 @@ def train(args):
     model.train()
     if config.model.ema:
         ema_helper = EMAHelper(mu=config.model.ema_rate)
+        
         ema_helper.register(model)
     else:
         ema_helper = None
- #   model = torch.nn.DataParallel(model)
+    model = torch.nn.DataParallel(model)
+    # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'30000'))
+    # model.load_state_dict(checkpoint)  
     constants_dict = constant(config)
     start = time.time()
     trainer(model, constants_dict, ema_helper, config)
@@ -75,17 +81,19 @@ def evaluate(args):
     config = OmegaConf.load(args.config)
     model = build_model(config)
     if config.data.category:
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'1000')) # config.model.checkpoint_name 300+50
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'29000')) # config.model.checkpoint_name 300+50
     else:
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '700'))
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '5000'))
+    model = torch.nn.DataParallel(model)
     model.load_state_dict(checkpoint)    
     model.to(config.model.device)
     model.eval()
-  #  model = torch.nn.DataParallel(model)
-    if config.model.ema:
+    if False: #config.model.ema:
         ema_helper = EMAHelper(mu=config.model.ema_rate)
         ema_helper.register(model)
+        ema_helper = torch.nn.DataParallel(ema_helper)
         ema_helper.load_state_dict(checkpoint)
+        
         ema_helper.ema(model)
     else:
         ema_helper = None
