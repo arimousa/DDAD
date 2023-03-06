@@ -81,7 +81,7 @@ def evaluate(args):
     config = OmegaConf.load(args.config)
     model = build_model(config)
     if config.data.category:
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'29000')) # config.model.checkpoint_name 300+50
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'5000')) # config.model.checkpoint_name 300+50
     else:
         checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '5000'))
     model = torch.nn.DataParallel(model)

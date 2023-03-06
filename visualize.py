@@ -38,29 +38,22 @@ def visualalize_rgb(image1,image2,image):
     plt.savefig('results/rgb{}.png'.format(k))
     plt.close()
 
-def visualalize_distance(output, target, i_d, f_d):
+def visualalize_distance(output, target):
     plt.figure(figsize=(11,11))
-    plt.subplot(1, 4, 1).axis('off')
-    plt.subplot(1, 4, 2).axis('off')
-    plt.subplot(1, 4, 3).axis('off')
-    plt.subplot(1, 4, 4).axis('off')
+    plt.subplot(1, 2, 1).axis('off')
+    plt.subplot(1, 2, 2).axis('off')
+  
 
-    plt.subplot(1, 4, 1)
+    plt.subplot(1, 2, 1)
     plt.imshow(show_tensor_image(output))
     plt.title('input image')
     
 
-    plt.subplot(1, 4, 2)
+    plt.subplot(1, 2, 2)
     plt.imshow(show_tensor_image(target))
     plt.title('reconstructed image')
 
-    plt.subplot(1, 4, 3)
-    plt.imshow(show_tensor_image(i_d))
-    plt.title('feature')
 
-    plt.subplot(1, 4, 4)
-    plt.imshow(show_tensor_image(f_d))
-    plt.title('pixel')
     k = 0
     while os.path.exists('results/heatmap{}.png'.format(k)):
         k += 1

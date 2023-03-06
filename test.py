@@ -12,6 +12,7 @@ from feature_extractor import *
 
 from EMA import EMAHelper
 from torch.utils.tensorboard import SummaryWriter
+from torchmetrics import StructuralSimilarityIndexMeasure
 
 
 def train_data_mean(testloader, feature_extractor, config):
@@ -54,7 +55,7 @@ def cr_function(x, train_mean, feature_extractor, config):
         
 
 
-@torch.no_grad()
+
 def validate(model, constants_dict, config):
 
     # if config.data.name == 'MVTec':
@@ -71,7 +72,7 @@ def validate(model, constants_dict, config):
         num_workers= config.model.num_workers,
         drop_last=False,
     )
-    feature_extractor = tune_feature_extractor(constants_dict, model, config)
+    SFE, TFE = tune_feature_extractor(constants_dict, model, config)
     # f_mean = train_data_mean(testloader, feature_extractor, config)
 
     labels_list = []
@@ -80,92 +81,91 @@ def validate(model, constants_dict, config):
     GT_list = []
     reconstructed_list = []
     forward_list = []
+    ssim = StructuralSimilarityIndexMeasure(data_range=1.0).to(config.model.device)
+
+    with torch.no_grad():
+        for data, targets, labels in testloader:
+                data = data.to(config.model.device)
+                    
+                test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps2]).type(torch.int64).to(config.model.device)
+                noisy_image = forward_diffusion_sample(data, test_trajectoy_steps, constants_dict, config)[0].to(config.model.device)
+                k = 0
+                # while os.path.exists('results/Forward{}_1.png'.format(k)):
+                #     k += 1
+                # plt.figure(figsize=(11,11))
+                # plt.subplot(1, 1, 1).axis('off')
+                # plt.subplot(1, 1, 1)
+                # plt.imshow(show_tensor_image(noisy_image))
+                # plt.title('forward 1') 
+                # plt.savefig('results/Forward{}_1.png'.format(k))
 
 
 
-    for data, targets, labels in testloader:
-            data = data.to(config.model.device)
-                
-            test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps]).type(torch.int64).to(config.model.device)
-            noisy_image = forward_diffusion_sample(data, test_trajectoy_steps, constants_dict, config)[0].to(config.model.device)
-            k = 0
-            # while os.path.exists('results/Forward{}_1.png'.format(k)):
-            #     k += 1
-            # plt.figure(figsize=(11,11))
-            # plt.subplot(1, 1, 1).axis('off')
-            # plt.subplot(1, 1, 1)
-            # plt.imshow(show_tensor_image(noisy_image))
-            # plt.title('forward 1') 
-            # plt.savefig('results/Forward{}_1.png'.format(k))
+                seq = range(0 , config.model.test_trajectoy_steps2, config.model.skip2)
+                # print('seq : ',seq)
+                # H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
+                # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .0, cls_fn=None, classes=None, early_stop=False) 
+                # data_reconstructed = reconstructed[-1]
 
-
-
-            seq = range(0 , config.model.test_trajectoy_steps, config.model.skip)
-            # print('seq : ',seq)
-            H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
-            # cr = cr_function(data, f_mean, feature_extractor, config)
-            # # cr = torch.clamp(cr, min=0.1, max=0.3)
-            # print('cr old: ', cr.mean(), cr.max(), cr.min())
-            # cr = cr * 25 #50
-            # cr = torch.clamp(cr, min=0.01, max=0.3)
-            # print('cr new: ', cr.mean(), cr.max(), cr.min())
-            cr = 0.4
-            reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama= cr, constants_dict=constants_dict ,eraly_stop = True)
-            # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .0, cls_fn=None, classes=None, early_stop=False) 
-            data_reconstructed = reconstructed[-1]
-
-            r = 5
-            for i in range(r):
-                noisy_image = forward_ti_steps(test_trajectoy_steps, 1 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
-                # print('gama : ',gama)
-                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=cr, constants_dict=constants_dict, eraly_stop = True)
-                # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .0, cls_fn=None, classes=None, early_stop=True)
+                cr = 0.2 # 0.2 for prediction interpolation
+                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama= cr, constants_dict=constants_dict ,eraly_stop = False)
                 data_reconstructed = reconstructed[-1]
 
-
-            seq = range(0, config.model.test_trajectoy_steps2, config.model.skip2)
-            # noisy_image = forward_ti_steps(test_trajectoy_steps, 1 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
-            reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.1, constants_dict=constants_dict, eraly_stop = False)
-            # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .0, cls_fn=None, classes=None, early_stop=False)
-            data_reconstructed = reconstructed[-1]
-
-            
-
-            # visualize_reconstructed(data, rec_x0,s=3)
-            # visualize_reconstructed(data, reconstructed,s=4)
+                # r = 4
+                # for i in range(r):
+                #     noisy_image = forward_ti_steps(test_trajectoy_steps, 1 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
+                #     reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=cr, constants_dict=constants_dict, eraly_stop = True)
+                #     data_reconstructed = reconstructed[-1]
 
 
-            # forward_list_compare.append(forward_diffusion_sample(data, torch.Tensor([9 * config.model.skip]).type(torch.int64), constants_dict, config)[0])
-            # reconstructed_compare.append(reconstructed[-10])
+                # seq = range(0, config.model.test_trajectoy_steps2, config.model.skip2)
+                # noisy_image = forward_ti_steps(test_trajectoy_steps, 1 * config.model.skip, data_reconstructed, data, constants_dict['betas'], config)
+                # reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama=0.3, constants_dict=constants_dict, eraly_stop = False)
+                # data_reconstructed = reconstructed[-1]
 
-            
+                
 
-            
-
-            anomaly_map = heat_map(reconstructed[-1], data, feature_extractor, constants_dict, config)
-            
-            forward_list.append(data)
-            anomaly_map_list.append(anomaly_map)
-            GT_list.append(targets)
-            reconstructed_list.append(data_reconstructed)
-
-            for pred, label in zip(anomaly_map, labels):
-                labels_list.append(0 if label == 'good' else 1)
-                # predictions.append( 1 if torch.max(pred).item() > 0.1 else 0)
-                predictions.append(torch.max(pred).item() )
+                # visualize_reconstructed(data, rec_x0,s=3)
+                # visualize_reconstructed(data, reconstructed,s=4)
 
 
+                # forward_list_compare.append(forward_diffusion_sample(data, torch.Tensor([9 * config.model.skip]).type(torch.int64), constants_dict, config)[0])
+                # reconstructed_compare.append(reconstructed[-10])
 
+                
 
-    
-    
-    
+                
+
+                anomaly_map = heat_map(reconstructed[-1], data, SFE, TFE, constants_dict, config)
+                
+                forward_list.append(data)
+                anomaly_map_list.append(anomaly_map)
+                GT_list.append(targets)
+                reconstructed_list.append(data_reconstructed)
+
+                # for reconstruction, clear, label in zip(data_reconstructed, data, labels):
+                #     labels_list.append(0 if label == 'good' else 1)
+                #     # predictions.append( 1 if torch.max(pred).item() > 0.1 else 0)
+                #     predictions.append(ssim(reconstruction.unsqueeze(0).to(config.model.device), clear.unsqueeze(0).to(config.model.device)))
+
+        
+                for pred, label in zip(anomaly_map, labels):
+                    labels_list.append(0 if label == 'good' else 1)
+                    # predictions.append( 1 if torch.max(pred).item() > 0.1 else 0)
+                    predictions.append(torch.max(pred).item() )
+
+        
+        
+
     
     threshold = metric(labels_list, predictions, anomaly_map_list, GT_list, config)
     print('threshold: ', threshold)
 
-    forward_list = torch.cat(forward_list, dim=0)
     reconstructed_list = torch.cat(reconstructed_list, dim=0)
+    forward_list = torch.cat(forward_list, dim=0)
+
+    
+    
     anomaly_map_list = torch.cat(anomaly_map_list, dim=0)
     pred_mask = (anomaly_map_list> threshold).float()
     GT_list = torch.cat(GT_list, dim=0)
