@@ -20,43 +20,133 @@ def my_generalized_steps(y, x, seq, model, b, config, gama, constants_dict, eral
         seq_next = [-1] + list(seq[:-1])
         x0_preds = []
         xs = [x]
-
-        
+        eta2 = gama
+        eta3 = gama 
         for index, (i, j) in enumerate(zip(reversed(seq), reversed(seq_next))):
             t = (torch.ones(n) * i).to(x.device)
+            t_one = (torch.ones(n)).to(x.device)
             next_t = (torch.ones(n) * j).to(x.device)
             at = compute_alpha(b, t.long(),config)
             at_next = compute_alpha(b, next_t.long(),config)
             xt = xs[-1].to('cuda')
+            
             et = model(xt, t)
+            yt = at.sqrt() * y + (1- at).sqrt() *  et
+            # print(torch.max(yt-xt),' ',torch.mean(yt-xt),' ',torch.min(yt-xt))
+            # if index < len(seq) - 5:
+            et_hat = et - (1 - at).sqrt() * eta2 * (yt-xt) #unet_condition(xt, yt, t) #torch.clamp((yt-xt), min=torch.min(yt-xt)*30/100, max=torch.max(yt-xt)*30/100) #torch.clamp((yt-xt), min=torch.min(y-x) + (torch.mean(yt-xt)- torch.min(yt-xt))/2, max=torch.max(yt-xt)-(torch.max(yt-xt)- torch.mean(yt-xt))/2) #unet_condition(xt, yt, t)  # * 50 *   # unet_condition(xt, yt, t)    (yt-xt)
+            # else:
+            #     et_hat = et
+            x0_t = (xt - et_hat * (1 - at).sqrt()) / at.sqrt()
+            et_hat = et_hat - (1 - at).sqrt() * eta3 * (y-x0_t) #unet_condition(x0_t, y, t_one)
+            x0_t = (xt - et_hat * (1 - at).sqrt()) / at.sqrt()
+            # et_hat = et_hat - (1 - at).sqrt() * eta3 * (y-x0_t) #unet_condition(x0_t, y, t_one)
+            # x0_t = (xt - et_hat * (1 - at).sqrt()) / at.sqrt()
+            # eta2 = eta2 * 0.9
+            # eta2 = eta2 * 0.9
 
-            noisy_y = forward_diffusion_sample(y, t.type(torch.int64), constants_dict, config)[0].to(config.model.device)
 
-            if index <8:
-                xt = xt * (1 -0.1)   + noisy_y * 0.1
-                # gama = gama * .95
-
-                # xt = slerp(xt, noisy_y, 0.2)
-            x0_t = (xt - et * (1 - at).sqrt()) / at.sqrt()
-            # if index == 0:
-            #     x0_t =  x0_t * (1 - gama)   + y * gama 
-            # if index < 3:
-            # print('gama', gama ** (index+1))
-            # x0_t =  x0_t * (1 - (0.05 ))   + y * (0.05)  
-            if index < 8:
-                x0_t = x0_t * (1 - gama)   + y * (gama)
             x0_preds.append(x0_t.to('cpu')) 
-            c1 = (
-                config.model.eta * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()
-            )
-            c2 = ((1 - at_next) - c1 ** 2).sqrt()
-            xt_next = at_next.sqrt() * x0_t + c2 * et  + c1 * torch.randn_like(x)
+            if index == 0:
+                c1 = torch.zeros_like(x0_t)
+                c2 = torch.zeros_like(x0_t)
+            else:
+                c1 = (
+                    config.model.eta * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()
+                )
+                c2 = ((1 - at_next) - c1 ** 2).sqrt()
+            
+            xt_next = at_next.sqrt() * x0_t + c1 * torch.randn_like(x) + c2 * et_hat
+
+            #----------------------------------------------------------------------------------------------------------
+            # if index > 0:
+            #     et_next = model(xt_next, t-config.model.skip)
+            #     yt_next = at_next.sqrt() * y + (1- at_next).sqrt() *  et_next
+            #     et_next_hat = et_next - (1 - at_next).sqrt() * eta2 * (yt_next-xt_next) #unet_condition(et_next, yt_next, t-config.model.skip)
+
+            #     et_final = (et_hat +et_next_hat)/2 - (1 - at).sqrt() *  eta2 * (yt-xt) #unet_condition(xt, yt, t) # - (1 - at).sqrt() *  et_next_hat
+
+            #     x0_t_final = (xt - et_final * (1 - at).sqrt()) / at.sqrt()
+            #     x0_preds.append(x0_t.to('cpu')) 
+            #     if index == 0:
+            #         c1 = torch.zeros_like(x0_t)
+            #         c2 = torch.zeros_like(x0_t)
+            #     else:
+            #         c1 = (
+            #             config.model.eta * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()
+            #         )
+            #         c2 = ((1 - at_next) - c1 ** 2).sqrt()
+
+            #     xt_next = at_next.sqrt() * x0_t_final + c1 * torch.randn_like(x) + c2 * et_final
+            #----------------------------------------------------------------------------------------------------------
+
             xs.append(xt_next.to('cpu'))
             if eraly_stop:
                 if index == 0:
                     return xs, x0_preds
 
     return xs, x0_preds
+
+
+# def my_generalized_steps2(y, x, seq, model, unet_condition, b, config, gama, constants_dict, eraly_stop = True):
+#     with torch.no_grad():
+#         n = x.size(0)
+#         seq_next = [-1] + list(seq[:-1])
+#         x0_preds = []
+#         xs = [x]
+#         for index, (i, j) in enumerate(zip(reversed(seq), reversed(seq_next))):
+#             t = (torch.ones(n) * i).to(x.device)
+#             next_t = (torch.ones(n) * j).to(x.device)
+#             at = compute_alpha(b, t.long(),config)
+#             at_next = compute_alpha(b, next_t.long(),config)
+#             xt = xs[-1].to('cuda')
+            
+#             et = model(xt, t)
+#             yt = at.sqrt() * y + (1- at).sqrt() *  et
+
+#             et_hat =   et - (1 - at).sqrt() *  20 *  (yt-xt)  #unet_condition(xt, yt, t)  # * 50 *   # unet_condition(xt, yt, t)    (yt-xt)
+
+#             x0_t = (xt - et_hat * (1 - at).sqrt()) / at.sqrt()
+
+#             # x0_preds.append(x0_t.to('cpu')) 
+#             if index == 0:
+#                 c1 = torch.zeros_like(x0_t)
+#                 c2 = torch.zeros_like(x0_t)
+#             else:
+#                 c1 = (
+#                     config.model.eta * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()
+#                 ) 
+#                 c2 = ((1 - at_next) - c1 ** 2).sqrt()
+            
+#             xt_next = at_next.sqrt() * x0_t + c1 * torch.randn_like(x) + c2 * et_hat
+#             #----------------------------------------------------------------------------------------------------------
+#             if index > 0:
+#                 et_next = model(xt_next, t-config.model.skip)
+#                 yt_next = at_next.sqrt() * y + (1- at_next).sqrt() *  et_next
+#                 et_next_hat = et_next  - (1 - at_next).sqrt() * 20 * (yt_next-xt_next)
+
+#                 et_final = (et_hat +et_next_hat)/2 - (1 - at).sqrt()# *  50 *  (yt-xt) # - (1 - at).sqrt() *  et_next_hat
+
+#                 x0_t_final = (xt - et_final * (1 - at).sqrt()) / at.sqrt()
+#                 x0_preds.append(x0_t.to('cpu')) 
+#                 if index == 0:
+#                     c1 = torch.zeros_like(x0_t)
+#                     c2 = torch.zeros_like(x0_t)
+#                 else:
+#                     c1 = (
+#                         config.model.eta * ((1 - at / at_next) * (1 - at_next) / (1 - at)).sqrt()
+#                     )
+#                     c2 = ((1 - at_next) - c1 ** 2).sqrt()
+
+#                 xt_next = at_next.sqrt() * x0_t_final + c1 * torch.randn_like(x) + c2 * et_final
+
+
+#             xs.append(xt_next.to('cpu'))
+#             # if eraly_stop:
+#             #     if index == 0:
+#             #         return xs, x0_preds
+
+#     return xs, x0_preds
 
 
 #https://github.com/ermongroup/ddim
@@ -84,10 +174,10 @@ def generalized_steps(x, seq, model, b, config, **kwargs):
 
     return xs, x0_preds
 
-def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, gama = .3, cls_fn=None, classes=None, early_stop = False):
+def efficient_generalized_steps(config, constants_dict, x, seq, model, b, H_funcs, y_0, gama = .3, sigma_0 = 0.1, cls_fn=None, classes=None, early_stop = False):
     with torch.no_grad():
         #setup vectors used in the algorithm
-        sigma_0 = 0.3 # 0makes the same #config.model.sigma #0.5
+        #sigma_0 = 0.1 # 0makes the same #config.model.sigma #0.5
         etaB = 1
         etaA = 0.85
         etaC = 0.85
@@ -131,6 +221,9 @@ def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, gama = .
             xt = xs[-1].to('cuda')
             if cls_fn == None:
                 et = model(xt, t)
+
+                # yt = at.sqrt() * y_0 + (1- at).sqrt() * et
+                # et = et - (1 - at).sqrt() * 10 * (yt-xt)
             else:
                 et = model(xt, t, classes)
                 et = et[:, :3]
@@ -144,7 +237,7 @@ def efficient_generalized_steps(config, x, seq, model, b, H_funcs, y_0, gama = .
             # if index < seq_len*.4:
             #     x0_t =  0.6  * x0_t  + 0.4 * y_0    # x0_t =  ((seq_len + index)/(2*seq_len) * x0_t  +  ((seq_len - index)/(2*seq_len)) * y_0)   # x0_t =  0.5  * x0_t  + (0.5 * y_0) # 0.2 * y_0 + 0.8 * x0_t #####################################################################
             # if index < 3:
-            # x0_t =  x0_t * (1 - gama)   + y_0 * gama 
+            x0_t =  x0_t * (1 - gama)   + y_0 * gama 
             # gama = gama * 0.9
             #variational inference conditioned on y
             sigma = (1 - at).sqrt()[0, 0, 0, 0] / at.sqrt()[0, 0, 0, 0]

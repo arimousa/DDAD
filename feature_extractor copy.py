@@ -8,7 +8,7 @@ from dataset import *
 import timm
 from torch import Tensor, nn
 from typing import Callable, List, Tuple, Union
-from model import *
+from unet import *
 from omegaconf import OmegaConf
 from sample import *
 from visualize import *
@@ -18,67 +18,9 @@ from visualize import *
 
 def build_model(config):
     #model = SimpleUnet()
-    model = UNetModel(256, 64, dropout=0, n_heads=4 ,in_channels=config.data.imput_channel)
-    return model
-
-def fake_real_dataset(config, constants_dict):
-    if config.data.name == 'MVTec':
-        train_dataset = MVTecDataset(
-            root= config.data.data_dir,
-            category=config.data.category,
-            config = config,
-            is_train=True,
-        )
-        trainloader = torch.utils.data.DataLoader(
-            train_dataset,
-            batch_size=config.data.batch_size,
-            shuffle=True,
-            num_workers=config.model.num_workers,
-            drop_last=True,
-        )
-    R_F_dataset=[]
-    print("Start generating fake real dataset")
-    for step, batch in tqdm(enumerate(trainloader), total=len(trainloader)):
-        print('step: ',step)
-        image = batch[0]
-        image = image.to(config.model.device)
-        model = build_model(config)
-        if config.data.category:
-            checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'5000')) # config.model.checkpoint_name 300+50
-        else:
-            checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '100'))
-        model.load_state_dict(checkpoint)    
-        model.to(config.model.device)
-        model.eval()
-        generate_time_steps = torch.Tensor([config.model.generate_time_steps]).type(torch.int64)
-        noise = get_noise(image,config) 
-        # noise = forward_diffusion_sample(image, generate_time_steps, constants_dict, config)[0]
-        seq = range(0, config.model.generate_time_steps, config.model.skip_generation)
-        # H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
-        # reconstructed,_ =  efficient_generalized_steps(config, noise, seq, model,  constants_dict['betas'], H_funcs, image, cls_fn=None, classes=None) 
-        reconstructed,_ = generalized_steps(noise, seq, model, constants_dict['betas'], config, eta=config.model.eta)
-        generated_image = reconstructed[-1]
-        generated_image = generated_image.to(config.model.device)
-        transform = transforms.Compose([
-                transforms.RandomHorizontalFlip(),
-                transforms.RandomVerticalFlip(),
-                transforms.RandomRotation(90),
-                transforms.RandomAffine(degrees=20, translate=(0.2, 0.2), scale=(0.8, 1.2), shear=0.1),
-                ])
-        generated_image = transform(generated_image)
-
-        for fake, real in zip(generated_image, image):
-            fake_label = torch.Tensor([1,0]).type(torch.float32).to(config.model.device)
-            real_label = torch.Tensor([0,1]).type(torch.float32).to(config.model.device)
-            R_F_dataset.append((fake.type(torch.float32), fake_label))
-            R_F_dataset.append((real.type(torch.float32), real_label))
-            # break
-            # if R_F_dataset.__len__() == 40:
-            #     return R_F_dataset
-        
-        if step == 0:
-            return R_F_dataset
-    return R_F_dataset
+    unet = UNetModel(256, 64, dropout=0, n_heads=4 ,in_channels=config.data.imput_channel)
+    return unet
+   
 
 
 def patchify(features, return_spatial_info=False):
@@ -115,7 +57,7 @@ def patchify(features, return_spatial_info=False):
 
 
 
-def tune_feature_extractor(constants_dict, model, config):
+def tune_feature_extractor(constants_dict, unet, config):
 
     
     
@@ -168,7 +110,7 @@ def tune_feature_extractor(constants_dict, model, config):
                 H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
                 # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .0, cls_fn=None, classes=None, early_stop=False)
                 # reconstructed, rec_x0 = generalized_steps(data, seq, model, constants_dict['betas'], config, eta = 1.0)
-                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, model, constants_dict['betas'], config, gama= 0.01, constants_dict=constants_dict, eraly_stop = False)
+                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config, gama= 0.01, constants_dict=constants_dict, eraly_stop = False)
                 # reconstructed, rec_x0 = efficient_generalized_steps(config, noisy_image, seq, model,  constants_dict['betas'], H_funcs, data, gama = .0, cls_fn=None, classes=None) 
                 data_reconstructed = reconstructed[-1].to(config.model.device)
 

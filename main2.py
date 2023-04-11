@@ -3,7 +3,7 @@ import numpy as np
 import os
 import argparse
 import time
-from model import *
+from unet import *
 from test import validate
 from omegaconf import OmegaConf
 from utilities import *
@@ -44,30 +44,30 @@ def constant(config):
 
 def build_model(config):
     #model = SimpleUnet()
-    model = UNetModel(256, 64, dropout=0, n_heads=4 ,in_channels=config.data.imput_channel)
-    return model
+    unet = UNetModel(256, 64, dropout=0, n_heads=4 ,in_channels=config.data.imput_channel)
+    return unet
 
     
 
 def train(args):
     config = OmegaConf.load(args.config)
     
-    model = build_model(config)
+    unet = build_model(config)
     print("Num params: ", sum(p.numel() for p in model.parameters()))
-    model = model.to(config.model.device)
-    model.train()
+    unet = unet.to(config.model.device)
+    unet.train()
     if config.model.ema:
         ema_helper = EMAHelper(mu=config.model.ema_rate)
         
-        ema_helper.register(model)
+        ema_helper.register(unet)
     else:
         ema_helper = None
-    model = torch.nn.DataParallel(model)
+    unet = torch.nn.DataParallel(unet)
     # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'30000'))
     # model.load_state_dict(checkpoint)  
     constants_dict = constant(config)
     start = time.time()
-    trainer(model, constants_dict, ema_helper, config)
+    trainer(unet, constants_dict, ema_helper, config)
     end = time.time()
     print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
     with open('readme.txt', 'a') as f:
@@ -78,15 +78,15 @@ def train(args):
 def evaluate(args):
     start = time.time()
     config = OmegaConf.load(args.config)
-    model = build_model(config)
+    unet = build_model(config)
     if config.data.category:
         checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'5000')) # config.model.checkpoint_name 300+50
     else:
         checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '8000'))
-    model = torch.nn.DataParallel(model)
-    model.load_state_dict(checkpoint)    
-    model.to(config.model.device)
-    model.eval()
+    unet = torch.nn.DataParallel(unet)
+    unet.load_state_dict(checkpoint)    
+    unet.to(config.model.device)
+    unet.eval()
     if False: #config.model.ema:
         ema_helper = EMAHelper(mu=config.model.ema_rate)
         ema_helper.register(model)
@@ -97,7 +97,7 @@ def evaluate(args):
     else:
         ema_helper = None
     constants_dict = constant(config)
-    validate(model, constants_dict, config)
+    validate(unet, constants_dict, config)
     end = time.time()
     print('Test time is ', str(timedelta(seconds=end - start)))
 

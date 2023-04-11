@@ -132,7 +132,7 @@ def visualize(image, noisy_image, GT, pred_mask, anomaly_map, category) :
 
         plt.subplot(1, 3, 2)
         plt.imshow(show_tensor_mask(pred_mask[idx]))
-        plt.title('good' if torch.max(pred_mask[idx]) == 0 else 'bad', color="g" if torch.max(pred_mask[idx]) == 0 else "r")
+        plt.title('normal' if torch.max(pred_mask[idx]) == 0 else 'abnormal', color="g" if torch.max(pred_mask[idx]) == 0 else "r")
 
         plt.subplot(1, 3, 3)
         plt.imshow(show_tensor_image(anomaly_map[idx]))

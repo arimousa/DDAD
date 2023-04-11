@@ -83,7 +83,7 @@ class MVTecDataset(torch.utils.data.Dataset):
         self.mask_transform = transforms.Compose(
             [
                 transforms.Resize((config.data.image_size, config.data.image_size)),
-                transforms.CenterCrop(224),
+                # transforms.CenterCrop(224),
                 transforms.ToTensor(), # Scales data into [0,1] 
             ]
         )
@@ -128,7 +128,7 @@ class MVTecDataset(torch.utils.data.Dataset):
                         target = Image.open(
                             image_file.replace("/test/", "/ground_truth/"))
                     target = self.mask_transform(target)
-                    target = F.interpolate(target.unsqueeze(1) , size = int(self.config.data.image_size), mode="bilinear").squeeze(1)
+                    # target = F.interpolate(target.unsqueeze(1) , size = int(self.config.data.image_size), mode="bilinear").squeeze(1)
                     label = 'defective'
             else:
                 if os.path.dirname(image_file).endswith("good"):
@@ -146,78 +146,39 @@ class MVTecDataset(torch.utils.data.Dataset):
 
 
 
-def get_cifar_anomaly_dataset(trn_img, trn_lbl, tst_img, tst_lbl, abn_cls_idx=0, manualseed=-1):
-    """[summary]
-    Arguments:
-        trn_img {np.array} -- Training images
-        trn_lbl {np.array} -- Training labels
-        tst_img {np.array} -- Test     images
-        tst_lbl {np.array} -- Test     labels
-    Keyword Arguments:
-        abn_cls_idx {int} -- Anomalous class index (default: {0})
-    Returns:
-        [np.array] -- New training-test images and labels.
-    """
-    # Convert train-test labels into numpy array.
-    trn_lbl = np.array(trn_lbl)
-    tst_lbl = np.array(tst_lbl)
+def load_data(dataset_name='cifar10',normal_class=0,batch_size= 32):
 
-    # --
-    # Find idx, img, lbl for abnormal and normal on org dataset.
-    nrm_trn_idx = np.where(trn_lbl != abn_cls_idx)[0]
-    abn_trn_idx = np.where(trn_lbl == abn_cls_idx)[0]
-    nrm_trn_img = trn_img[nrm_trn_idx]    # Normal training images
-    abn_trn_img = trn_img[abn_trn_idx]    # Abnormal training images
-    nrm_trn_lbl = trn_lbl[nrm_trn_idx]    # Normal training labels
-    abn_trn_lbl = trn_lbl[abn_trn_idx]    # Abnormal training labels.
 
-    nrm_tst_idx = np.where(tst_lbl != abn_cls_idx)[0]
-    abn_tst_idx = np.where(tst_lbl == abn_cls_idx)[0]
-    nrm_tst_img = tst_img[nrm_tst_idx]    # Normal training images
-    abn_tst_img = tst_img[abn_tst_idx]    # Abnormal training images.
-    nrm_tst_lbl = tst_lbl[nrm_tst_idx]    # Normal training labels
-    abn_tst_lbl = tst_lbl[abn_tst_idx]    # Abnormal training labels.
+    img_transform = transforms.Compose([
+        transforms.Resize((32, 32)),
+        #transforms.CenterCrop(28),
+        transforms.ToTensor(),
+        transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+    ])
 
-    # --
-    # Assign labels to normal (0) and abnormals (1)
-    nrm_trn_lbl[:] = 0
-    nrm_tst_lbl[:] = 0
-    abn_trn_lbl[:] = 1
-    abn_tst_lbl[:] = 1
+    os.makedirs("./Dataset/CIFAR10/train", exist_ok=True)
+    dataset = CIFAR10('./Dataset/CIFAR10/train', train=True, download=True, transform=img_transform)
+    print("Cifar10 DataLoader Called...")
+    print("All Train Data: ", dataset.data.shape)
+    dataset.data = dataset.data[np.array(dataset.targets) == normal_class]
+    dataset.targets = [normal_class] * dataset.data.shape[0]
+    print("Normal Train Data: ", dataset.data.shape)
 
-    # --
-    if manualseed != -1:
-        # Random seed.
-        # Concatenate the original train and test sets.
-        nrm_img = np.concatenate((nrm_trn_img, nrm_tst_img), axis=0)
-        nrm_lbl = np.concatenate((nrm_trn_lbl, nrm_tst_lbl), axis=0)
-        abn_img = np.concatenate((abn_trn_img, abn_tst_img), axis=0)
-        abn_lbl = np.concatenate((abn_trn_lbl, abn_tst_lbl), axis=0)
+    os.makedirs("./Dataset/CIFAR10/test", exist_ok=True)
+    test_set = CIFAR10("./Dataset/CIFAR10/test", train=False, download=True, transform=img_transform)
+    print("Test Train Data:", test_set.data.shape)
 
-        # Split the normal data into the new train and tests.
-        idx = np.arange(len(nrm_lbl))
-        np.random.seed(manualseed)
-        np.random.shuffle(idx)
+    train_dataloader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=batch_size,
+        shuffle=True,
+    )
+    test_dataloader = torch.utils.data.DataLoader(
+        test_set,
+        batch_size=32,
+        shuffle=False,
+    )
 
-        nrm_trn_len = int(len(idx) * 0.80)
-        nrm_trn_idx = idx[:nrm_trn_len]
-        nrm_tst_idx = idx[nrm_trn_len:]
+    return train_dataloader, test_dataloader
 
-        nrm_trn_img = nrm_img[nrm_trn_idx]
-        nrm_trn_lbl = nrm_lbl[nrm_trn_idx]
-        nrm_tst_img = nrm_img[nrm_tst_idx]
-        nrm_tst_lbl = nrm_lbl[nrm_tst_idx]
 
-    # Create new anomaly dataset based on the following data structure:
-    # - anomaly dataset
-    #   . -> train
-    #        . -> normal
-    #   . -> test
-    #        . -> normal
-    #        . -> abnormal
-    new_trn_img = np.copy(nrm_trn_img)
-    new_trn_lbl = np.copy(nrm_trn_lbl)
-    new_tst_img = np.concatenate((nrm_tst_img, abn_trn_img, abn_tst_img), axis=0)
-    new_tst_lbl = np.concatenate((nrm_tst_lbl, abn_trn_lbl, abn_tst_lbl), axis=0)
-
-    return new_trn_img, new_trn_lbl, new_tst_img, new_tst_lbl

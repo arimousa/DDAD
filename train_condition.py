@@ -22,8 +22,9 @@ from EMA import EMAHelper
 
 
 
-def trainer(model, constants_dict, ema_helper, config):
-    optimizer = build_optimizer(model, config)
+def trainer2(model, model_y, constants_dict, ema_helper, config):
+    # optimizer = build_optimizer(model_y, config)
+    optimizer = Adam(model_y.parameters(), lr=config.model.learning_rate, weight_decay= 0.0)
     if config.data.name == 'MVTec':
         train_dataset = MVTecDataset(
             root= config.data.data_dir,
@@ -45,20 +46,24 @@ def trainer(model, constants_dict, ema_helper, config):
 
     for epoch in range(config.model.epochs):
         for step, batch in enumerate(trainloader):
+            batch1 = batch[0][:16].to(config.model.device)
+            batch2 = batch[0][16:].to(config.model.device)
             
-            t = torch.randint(0, config.model.trajectory_steps, (batch[0].shape[0],), device=config.model.device).long()
+
+
+            t = torch.randint(config.model.skip, config.model.trajectory_steps, (batch1.shape[0],), device=config.model.device).long()
 
 
             optimizer.zero_grad()
-            loss = get_loss(model, constants_dict, batch[0], t, config) 
+            loss = get_loss_condition(model, model_y, constants_dict, batch1, batch2, t, config) 
             loss.backward()
             optimizer.step()
             
             if config.model.ema:
-                ema_helper.update(model)
-            if epoch % 100 == 0 and step == 0:
+                ema_helper.update(model_y)
+            if epoch % 10 == 0 and step == 0:
                 print(f"Epoch {epoch} | Loss: {loss.item()}")
-            if epoch %1000 == 0 and step ==0:
+            if epoch %100 == 0 and step ==0:
                 # sample_plot_image(model, trainloader, constant_dict, epoch, category, config)
                 if config.model.save_model:
                     if config.data.category:
@@ -67,7 +72,7 @@ def trainer(model, constants_dict, ema_helper, config):
                         model_save_dir = os.path.join(os.getcwd(), config.model.checkpoint_dir)
                     if not os.path.exists(model_save_dir):
                         os.mkdir(model_save_dir)
-                    torch.save(model.state_dict(), os.path.join(model_save_dir, str(epoch))) #config.model.checkpoint_name
+                    torch.save(model_y.state_dict(), os.path.join(model_save_dir, 'condition'+str(epoch))) #config.model.checkpoint_name
 
             # if epoch %150 == 0  and step ==0: #and epoch>0
             #         validate(model, constants_dict, config, category, v_train)
@@ -80,7 +85,7 @@ def trainer(model, constants_dict, ema_helper, config):
             model_save_dir = os.path.join(os.getcwd(), config.model.checkpoint_dir)
         if not os.path.exists(model_save_dir):
             os.mkdir(model_save_dir)
-        torch.save(model.state_dict(), os.path.join(model_save_dir, str(config.model.epochs))) #config.model.checkpoint_name
+        torch.save(model_y.state_dict(), os.path.join(model_save_dir, 'condition'+str(config.model.epochs)))
    
     writer.flush()
     writer.close()

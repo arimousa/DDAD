@@ -1,34 +1,36 @@
 data :
-  name: mvtec #mtd # mvtec  #mvtec if the dataset is MVTec AD, otherwise, it is the name of your desire dataset
-  data_dir: datasets/MVTec   #MTD    #MVTec
-  category: metal_nut   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
-  image_size:  256
+  name: MVTec #cifar10 #MVTec #  membrane #mtd # mvtec  #mvtec #CIFAR10 if the dataset is MVTec AD, otherwise, it is the name of your desire dataset
+  data_dir: datasets/MVTec  #cifar10   #MVTec     #membrane   #MTD    #MVTec
+  category: carpet #zero   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
+  image_size: 256 #256 #32
   batch_size: 32
-  mask : True
+  mask : True #False True
   imput_channel : 3
+  manualseed: -1
+
 
 
 model:
-  checkpoint_dir: checkpoints/MVTec   #MTD 
+  checkpoint_dir: checkpoints/MVTec     #CIFAR10    #membrane   #MTD  #MVTec
   checkpoint_name: weights
   exp_name: default
-  backbone: wide_resnet101_2 #wide_resnet101_2  #resnet18 # wide_resnet50_2 #resnet34 #deit_base_distilled_patch16_384
+  backbone: resnet18 #wide_resnet101_2  #resnet18 # wide_resnet50_2 #resnet34 #deit_base_distilled_patch16_384
   pre_trained: True
   noise : Gaussian # options : [Gaussian, Perlin]
   schedule : linear # options: [linear, quad, const, jsd, sigmoid]
   fine_tune : True #True #False
   learning_rate: 1e-4 #0.0002
   weight_decay: 0
-  epochs: 1000
+  epochs: 30000
   trajectory_steps: 1000
-  test_trajectoy_steps: 160 #160  
-  test_trajectoy_steps2: 160 #160 
-  generate_time_steps: 900
+  test_trajectoy_steps: 200 #90 #160  
+  test_trajectoy_steps2: 200 #160 
+  trajectory_steps_condition: 500
   skip : 20 #10
-  skip2 : 40 #20 #60
+  skip2 : 20 #20 #60
   skip_generation : 100 #225
   sigma : 0.5
-  eta : 1
+  eta : 1 #1
   beta_start : 0.0001 # 0.0001
   beta_end : 0.02  # 0.006 for 300
   ema : True
@@ -39,10 +41,12 @@ model:
   seed : 42
 
 
+
 metrics:
-  image_level_F1Score: True
   image_level_AUROC: True
   pixel_level_AUROC: True
+  image_level_F1Score: True
+  pixel_level_F1Score: True
   threshold:
     method: adaptive #options: [adaptive, manual]
     manual_image: null

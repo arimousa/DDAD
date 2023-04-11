@@ -3,18 +3,18 @@ import numpy as np
 import os
 import argparse
 import time
-from model import *
+from unet import *
 from test import validate
 from omegaconf import OmegaConf
 from utilities import *
 import torch.nn.functional as F
 from train import trainer
-from train_2 import trainer2
+from train_condition import trainer2
 from datetime import timedelta
 from EMA import EMAHelper
 from feature_extractor import *
 
-os.environ['CUDA_VISIBLE_DEVICES'] = "0,1,2,3"
+os.environ['CUDA_VISIBLE_DEVICES'] = "0,1,3"
 
 
 def constant(config):
@@ -45,30 +45,63 @@ def constant(config):
 
 def build_model(config):
     #model = SimpleUnet()
-    model = UNetModel(256, 64, dropout=0, n_heads=4 ,in_channels=config.data.imput_channel)
-    return model
+    unet = UNetModel(config.data.image_size, 64, dropout=0, n_heads=4 ,in_channels=config.data.imput_channel)
+    return unet
 
     
 
 def train(args):
     config = OmegaConf.load(args.config)
     
-    model = build_model(config)
-    print("Num params: ", sum(p.numel() for p in model.parameters()))
-    model = model.to(config.model.device)
-    model.train()
+    unet = build_model(config)
+    print("Num params: ", sum(p.numel() for p in unet.parameters()))
+    unet = unet.to(config.model.device)
+    unet.train()
     if config.model.ema:
         ema_helper = EMAHelper(mu=config.model.ema_rate)
         
-        ema_helper.register(model)
+        ema_helper.register(unet)
     else:
         ema_helper = None
-    model = torch.nn.DataParallel(model)
-    # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'30000'))
-    # model.load_state_dict(checkpoint)  
+    unet = torch.nn.DataParallel(unet)
+    # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'11000'))
+    # unet.load_state_dict(checkpoint)  
     constants_dict = constant(config)
     start = time.time()
-    trainer(model, constants_dict, ema_helper, config)
+    trainer(unet, constants_dict, ema_helper, config)
+    end = time.time()
+    print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
+    with open('readme.txt', 'a') as f:
+        f.write('\n training time is {}\n'.format(str(timedelta(seconds=end - start))))
+
+def train_condition(args):
+    config = OmegaConf.load(args.config)
+    
+    unet_condition = SimpleUnet()
+    unet = build_model(config)
+    if config.data.category:
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'1000')) # config.model.checkpoint_name 300+50
+    else:
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '5000'))
+    unet = torch.nn.DataParallel(unet)
+    unet.load_state_dict(checkpoint)    
+    unet.to(config.model.device)
+    unet.eval()
+    print("Num params: ", sum(p.numel() for p in unet_condition.parameters()))
+    unet_condition = unet_condition.to(config.model.device)
+    unet_condition.train()
+    if config.model.ema:
+        ema_helper = EMAHelper(mu=config.model.ema_rate)
+        
+        ema_helper.register(unet_condition)
+    else:
+        ema_helper = None
+    unet_condition = torch.nn.DataParallel(unet_condition)
+    # checkpoint_con = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'condition11900'))
+    # unet_condition.load_state_dict(checkpoint_con)  
+    constants_dict = constant(config)
+    start = time.time()
+    trainer2(unet, unet_condition, constants_dict, ema_helper, config)
     end = time.time()
     print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
     with open('readme.txt', 'a') as f:
@@ -79,15 +112,26 @@ def train(args):
 def evaluate(args):
     start = time.time()
     config = OmegaConf.load(args.config)
-    model = build_model(config)
+    unet = build_model(config)
     if config.data.category:
         checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'5000')) # config.model.checkpoint_name 300+50
     else:
         checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '5000'))
-    model = torch.nn.DataParallel(model)
-    model.load_state_dict(checkpoint)    
-    model.to(config.model.device)
-    model.eval()
+    unet = torch.nn.DataParallel(unet)
+    unet.load_state_dict(checkpoint)    
+    unet.to(config.model.device)
+    unet.eval()
+
+    # unet_condition = SimpleUnet()
+    # if config.data.category:
+    #     checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'condition0')) # config.model.checkpoint_name 300+50
+    # else:
+    #     checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), 'condition1500'))
+    # unet_condition = torch.nn.DataParallel(unet_condition)
+    # unet_condition.load_state_dict(checkpoint)    
+    # unet_condition.to(config.model.device)
+    # unet_condition.eval()
+
     if False: #config.model.ema:
         ema_helper = EMAHelper(mu=config.model.ema_rate)
         ema_helper.register(model)
@@ -98,7 +142,7 @@ def evaluate(args):
     else:
         ema_helper = None
     constants_dict = constant(config)
-    validate(model, constants_dict, config)
+    validate(unet, constants_dict, config)
     end = time.time()
     print('Test time is ', str(timedelta(seconds=end - start)))
 
@@ -114,6 +158,9 @@ def parse_args():
     cmdline_parser.add_argument('--eval', 
                                 default= False, 
                                 help='only evaluate the model')
+    cmdline_parser.add_argument('--condition', 
+                                default= False, 
+                                help='only train conditin model')
     args, unknowns = cmdline_parser.parse_known_args()
     return args
 
@@ -128,7 +175,10 @@ if __name__ == "__main__":
     np.random.seed(42)
     if torch.cuda.is_available():
         torch.cuda.manual_seed_all(42)
-    if args.eval:
+    if args.condition:
+        print('training condition model')
+        train_condition(args)
+    elif args.eval:
         print('evaluating')
         # config = OmegaConf.load(args.config)
         # constants_dict = constant(config)

@@ -1,12 +1,13 @@
 import torch
 from torchmetrics import ROC, AUROC, F1Score
 import os
+from torchvision.transforms import transforms
 
 
 def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
     labels_list = torch.tensor(labels_list)
     predictions = torch.tensor(predictions)
-
+    
 
     resutls_embeddings = anomaly_map_list[0]
     for feature in anomaly_map_list[1:]:
@@ -39,19 +40,22 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
         print('sample : ', i, ' prediction is: ',p.item() ,' label is: ',l.item() , 'prediction is : ', predictions[i].item() ,'\n' ) if l != p else None
 
     f1_scor = f1(predictions0_1, labels_list)
+    f1_pixel = f1(resutls_embeddings, GT_embeddings)
 
     if config.metrics.image_level_AUROC:
         print(f'AUROC: {auroc_score}')
     if config.metrics.pixel_level_AUROC:
-        print(f"auroc pixel: {auroc_pixel} ")
+        print(f"AUROC pixel level: {auroc_pixel} ")
     if config.metrics.image_level_F1Score:
         print(f'F1SCORE: {f1_scor}')
+    if config.metrics.pixel_level_F1Score:
+        print(f'F1SCORE pixel level: {f1_pixel}')
 
     with open('readme.txt', 'a') as f:
         f.write(
             f"{config.data.category} \n")
         f.write(
-            f"AUROC: {auroc_score}       |    auroc_pixel: {auroc_pixel}    |     F1SCORE: {f1_scor}   \n")
+            f"AUROC: {auroc_score}       |    auroc_pixel: {auroc_pixel}    |     F1SCORE: {f1_scor}    |     F1SCORE_pixel: {f1_pixel}   \n")
     roc = roc.reset()
     auroc = auroc.reset()
     f1 = f1.reset()
