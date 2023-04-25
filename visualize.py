@@ -38,20 +38,28 @@ def visualalize_rgb(image1,image2,image):
     plt.savefig('results/rgb{}.png'.format(k))
     plt.close()
 
-def visualalize_distance(output, target):
+def visualalize_distance(output, condition, target):
     plt.figure(figsize=(11,11))
-    plt.subplot(1, 2, 1).axis('off')
-    plt.subplot(1, 2, 2).axis('off')
+    plt.subplot(1, 3, 1).axis('off')
+    plt.subplot(1, 3, 2).axis('off')
+    plt.subplot(1, 3, 3).axis('off')
+    # plt.subplot(1, 6, 4).axis('off')
+    # plt.subplot(1, 6, 5).axis('off')
+    # plt.subplot(1, 6, 6).axis('off')
   
 
-    plt.subplot(1, 2, 1)
+    plt.subplot(1, 3, 1)
     plt.imshow(show_tensor_image(output))
     plt.title('input image')
     
 
-    plt.subplot(1, 2, 2)
+    plt.subplot(1, 3, 2)
+    plt.imshow(show_tensor_image(condition))
+    plt.title('condition image')
+
+    plt.subplot(1, 3, 3)
     plt.imshow(show_tensor_image(target))
-    plt.title('reconstructed image')
+    plt.title('generated image')
 
 
     k = 0

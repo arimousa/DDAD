@@ -17,6 +17,9 @@ from de_resnet import de_wide_resnet50_2
 import torchvision.transforms as T
 
 
+os.environ['CUDA_VISIBLE_DEVICES'] = "0,1,3"
+
+
 
 def build_model(config):
     #model = SimpleUnet()
@@ -95,7 +98,8 @@ def tune_feature_extractor(constants_dict, unet, config):
     
     
     # t_encoder, bn = resnet18(pretrained=True)
-    t_encoder, bn = wide_resnet50_2(pretrained=True)
+    # t_encoder, bn = wide_resnet50_2(pretrained=True)
+    t_encoder, bn = wide_resnet101_2(pretrained=True)
     # s_encoder, bn2 = wide_resnet50_2(pretrained=False)
 
 
@@ -107,7 +111,7 @@ def tune_feature_extractor(constants_dict, unet, config):
     # decoder = decoder.to(config.model.device)
 
 
-    if config.data.name == 'MVTec':
+    if config.data.name == 'MVTec' or config.data.name == 'BTAD' or config.data.name == 'MTD':
         train_dataset = MVTecDataset(
             root= config.data.data_dir,
             category=config.data.category,
@@ -153,37 +157,36 @@ def tune_feature_extractor(constants_dict, unet, config):
         # optimizer = torch.optim.Adam(list(decoder.parameters())+list(bn.parameters()),lr=.4e-4, betas=(0.5,0.999)) #config.model.learning_rate        
         optimizer = torch.optim.Adam(t_encoder.parameters(),lr= 1e-4) #config.model.learning_rate        
         
-        for epoch in range(1):
+        for epoch in range(2):
             gama = torch.rand(1).item()
             gama = (gama)
             gama = torch.round(torch.tensor(gama), decimals=2)
             
-            print('gama: ', gama)
+            # print('gama: ', gama)
             # gama= 0.05
             for step, batch in enumerate(trainloader):
-                data = batch[0].to(config.model.device)   
-                # data = batch[0][:16].to(config.model.device)  
-                # data2 = batch[0][16:].to(config.model.device)     
-                # data = (data + data2) /2 
-
-               
+                # data = batch[0].to(config.model.device)   
+                half_batch_size = batch[0].shape[0]//2
+                data = batch[0][:half_batch_size].to(config.model.device)  
+                data2 = batch[0][half_batch_size:].to(config.model.device)     
+                # data = (data + data2) /2              
 
                 # if torch.randint(1, 3, (1,)).item() ==1:
                 test_trajectoy_steps = torch.Tensor([config.model.test_trajectoy_steps]).type(torch.int64).to(config.model.device)
                 # noisy_image = forward_diffusion_sample(data, test_trajectoy_steps, constants_dict, config)[0].to(config.model.device)
                 at = compute_alpha(constants_dict['betas'], test_trajectoy_steps.long(),config)
-                noisy_image = at.sqrt() * data + (1- at).sqrt() * torch.randn_like(data).to('cuda')
+                noisy_image = at.sqrt() * data2 + (1- at).sqrt() * torch.randn_like(data2).to('cuda')
                 seq = range(0 , config.model.test_trajectoy_steps, config.model.skip)
                 
                 # H_funcs = Denoising(config.data.imput_channel, config.data.image_size, config.model.device)
                 # reconstructed, rec_x0 = efficient_generalized_steps(config, constants_dict, noisy_image, seq, unet,  constants_dict['betas'], H_funcs, data2, gama = .00,sigma_0 = 0.1, cls_fn=None, classes=None, early_stop=False)
 
 
-                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config, gama= gama, constants_dict=constants_dict, eraly_stop = False)
+                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config, eta2=2, eta3=1, constants_dict=constants_dict, eraly_stop = False)
                 # reconstructed, rec_x0 = generalized_steps(noisy_image, seq, unet, constants_dict['betas'], config)
                 data_reconstructed = reconstructed[-1].to(config.model.device)
                 
-                # visualalize_distance(data2, data_reconstructed)
+                # visualalize_distance(data2, data, data_reconstructed)
 
                 data_reconstructed = transform(data_reconstructed)
                 r_inputs = t_encoder(data_reconstructed)
@@ -221,6 +224,10 @@ def tune_feature_extractor(constants_dict, unet, config):
                 # torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_200'))
             elif epoch == 1:
                 torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_1'))
+            elif epoch == 2:
+                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_2'))
+            elif epoch == 3:
+                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_3'))
             elif epoch == 5:
                 torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_5'))
             elif epoch == 15:
@@ -232,47 +239,27 @@ def tune_feature_extractor(constants_dict, unet, config):
             elif epoch == 25:
                 torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_25'))
                 torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
-            # elif epoch == 30:
-            #     torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_30'))
-            # elif epoch == 35:
-            #     torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_35'))
-            # elif epoch == 40:
-            #     torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_40'))
-            # elif epoch == 45:
-            #     torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_45'))
+            elif epoch == 30:
+                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_30'))
+                torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
+            elif epoch == 35:
+                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_35'))
+                torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
+            elif epoch == 40:
+                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_40'))
+                torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
+            elif epoch == 45:
+                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_45'))
+                torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
 
-            # if epoch == 200:
-            #     torch.save(decoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'feature_200'))
-            #     torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_200'))
-            # elif epoch == 350:
-            #     torch.save(decoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'feature_350'))
-            #     torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_350'))
-            # # elif epoch == 300:
-            # #     torch.save(s_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'feature_st300'))
-            # #     torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
-            # elif epoch == 400:
-            #     torch.save(decoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'feature_400'))
-            #     torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_400'))
-            # elif epoch == 450:
-            #     torch.save(decoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'feature_450'))
-            #     torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_450'))
-            
-            # elif epoch == 250:
-            #     torch.save(decoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'feature_250'))
-            #     torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_250'))
-            
-
-        #     elif epoch == 150:
-        #         torch.save(decoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'feature_150'))
-        #         torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_150'))
         if config.data.category:
-            torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_tuned'))
-            # torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_250'))
+            torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_00'))
+            torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_250'))
         # else:
         #     torch.save(decoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), 'feature'))
     else:
         if config.data.category:
-            checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_tuned'))
+            checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_10'))
             # checkpoint_bn = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_200'))
             
         # else:

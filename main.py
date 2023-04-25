@@ -64,7 +64,7 @@ def train(args):
     else:
         ema_helper = None
     unet = torch.nn.DataParallel(unet)
-    # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'11000'))
+    # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'4500'))
     # unet.load_state_dict(checkpoint)  
     constants_dict = constant(config)
     start = time.time()
@@ -80,7 +80,7 @@ def train_condition(args):
     unet_condition = SimpleUnet()
     unet = build_model(config)
     if config.data.category:
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'1000')) # config.model.checkpoint_name 300+50
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'4500')) # config.model.checkpoint_name 300+50
     else:
         checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '5000'))
     unet = torch.nn.DataParallel(unet)
@@ -114,9 +114,9 @@ def evaluate(args):
     config = OmegaConf.load(args.config)
     unet = build_model(config)
     if config.data.category:
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'5000')) # config.model.checkpoint_name 300+50
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'3000')) # config.model.checkpoint_name 300+50
     else:
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '5000'))
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '1000'))
     unet = torch.nn.DataParallel(unet)
     unet.load_state_dict(checkpoint)    
     unet.to(config.model.device)

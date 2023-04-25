@@ -75,7 +75,6 @@ class MVTecDataset(torch.utils.data.Dataset):
                 transforms.Resize((config.data.image_size, config.data.image_size)),  
                 # transforms.CenterCrop(224), 
                 transforms.ToTensor(), # Scales data into [0,1] 
-                
                 transforms.Lambda(lambda t: (t * 2) - 1) # Scale between [-1, 1] 
             ]
         )
@@ -150,10 +149,10 @@ def load_data(dataset_name='cifar10',normal_class=0,batch_size= 32):
 
 
     img_transform = transforms.Compose([
-        transforms.Resize((32, 32)),
-        #transforms.CenterCrop(28),
+        # transforms.Resize((32, 32)),
         transforms.ToTensor(),
-        transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+        # transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+        transforms.Lambda(lambda t: (t * 2) - 1)
     ])
 
     os.makedirs("./Dataset/CIFAR10/train", exist_ok=True)
@@ -180,5 +179,39 @@ def load_data(dataset_name='cifar10',normal_class=0,batch_size= 32):
     )
 
     return train_dataloader, test_dataloader
+
+
+# def load_data(dataset_name='mnist',normal_class=0,batch_size= 32):
+#     img_transform = transforms.Compose([
+#         # transforms.Resize((32, 32)),
+#         transforms.ToTensor(),
+#         # transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
+#         transforms.Lambda(lambda t: (t * 2) - 1)
+#     ])
+
+#     os.makedirs("./Dataset/MNIST/train", exist_ok=True)
+#     dataset = MNIST('./Dataset/MNIST/train', train=True, download=True, transform=img_transform)
+#     print("Cifar10 DataLoader Called...")
+#     print("All Train Data: ", dataset.data.shape)
+#     dataset.data = dataset.data[np.array(dataset.targets) == normal_class]
+#     dataset.targets = [normal_class] * dataset.data.shape[0]
+#     print("Normal Train Data: ", dataset.data.shape)
+
+#     os.makedirs("./Dataset/MNIST/test", exist_ok=True)
+#     test_set = MNIST("./Dataset/MNIST/test", train=False, download=True, transform=img_transform)
+#     print("Test Train Data:", test_set.data.shape)
+
+#     train_dataloader = torch.utils.data.DataLoader(
+#         dataset,
+#         batch_size=batch_size,
+#         shuffle=True,
+#     )
+#     test_dataloader = torch.utils.data.DataLoader(
+#         test_set,
+#         batch_size=32,
+#         shuffle=False,
+#     )
+
+#     return train_dataloader, test_dataloader
 
 

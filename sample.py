@@ -14,14 +14,13 @@ def slerp(z1, z2, alpha):
     )
 
 
-def my_generalized_steps(y, x, seq, model, b, config, gama, constants_dict, eraly_stop = True):
+def my_generalized_steps(y, x, seq, model, b, config, eta2, eta3, constants_dict, eraly_stop = True):
     with torch.no_grad():
         n = x.size(0)
         seq_next = [-1] + list(seq[:-1])
         x0_preds = []
         xs = [x]
-        eta2 = gama
-        eta3 = gama 
+
         for index, (i, j) in enumerate(zip(reversed(seq), reversed(seq_next))):
             t = (torch.ones(n) * i).to(x.device)
             t_one = (torch.ones(n)).to(x.device)
@@ -33,17 +32,19 @@ def my_generalized_steps(y, x, seq, model, b, config, gama, constants_dict, eral
             et = model(xt, t)
             yt = at.sqrt() * y + (1- at).sqrt() *  et
             # print(torch.max(yt-xt),' ',torch.mean(yt-xt),' ',torch.min(yt-xt))
-            # if index < len(seq) - 5:
+            # if index < len(seq) - 8:
             et_hat = et - (1 - at).sqrt() * eta2 * (yt-xt) #unet_condition(xt, yt, t) #torch.clamp((yt-xt), min=torch.min(yt-xt)*30/100, max=torch.max(yt-xt)*30/100) #torch.clamp((yt-xt), min=torch.min(y-x) + (torch.mean(yt-xt)- torch.min(yt-xt))/2, max=torch.max(yt-xt)-(torch.max(yt-xt)- torch.mean(yt-xt))/2) #unet_condition(xt, yt, t)  # * 50 *   # unet_condition(xt, yt, t)    (yt-xt)
             # else:
             #     et_hat = et
             x0_t = (xt - et_hat * (1 - at).sqrt()) / at.sqrt()
-            et_hat = et_hat - (1 - at).sqrt() * eta3 * (y-x0_t) #unet_condition(x0_t, y, t_one)
-            x0_t = (xt - et_hat * (1 - at).sqrt()) / at.sqrt()
+            # print(torch.min(torch.abs(y-x0_t)))
+            et_hat = et_hat - (1 - at).sqrt() * eta3 * (y-x0_t) #torch.clamp((y-x0_t), min=torch.min(y-x0_t)*70/100, max=torch.max(y-x0_t)*70/100) #(y-x0_t) #unet_condition(x0_t, y, t_one)
+            # else:
+            #     x0_t = (xt - et_hat * (1 - at).sqrt()) / at.sqrt()
             # et_hat = et_hat - (1 - at).sqrt() * eta3 * (y-x0_t) #unet_condition(x0_t, y, t_one)
             # x0_t = (xt - et_hat * (1 - at).sqrt()) / at.sqrt()
             # eta2 = eta2 * 0.9
-            # eta2 = eta2 * 0.9
+            # eta3 = eta3 * 0.9
 
 
             x0_preds.append(x0_t.to('cpu')) 

@@ -1,7 +1,7 @@
 data :
-  name: MVTec #cifar10 #MVTec #  membrane #mtd # mvtec  #mvtec #CIFAR10 if the dataset is MVTec AD, otherwise, it is the name of your desire dataset
-  data_dir: datasets/MVTec  #cifar10   #MVTec     #membrane   #MTD    #MVTec
-  category: carpet #zero   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'pill','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
+  name: MVTec #cifar10 #MVTec #MTD #VisA  membrane #mtd # mvtec  #mvtec #CIFAR10 if the dataset is MVTec AD, otherwise, it is the name of your desire dataset
+  data_dir: datasets/MVTec  #cifar10   #MVTec     #membrane   #MTD    #MVTec  #BTAD
+  category: cable #zero   #['hazelnut', 'bottle', 'cable', 'carpet',  'leather', 'capsule', 'grid', 'image.png','transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']
   image_size: 256 #256 #32
   batch_size: 32
   mask : True #False True
@@ -30,7 +30,7 @@ model:
   skip2 : 20 #20 #60
   skip_generation : 100 #225
   sigma : 0.5
-  eta : 1 #1
+  eta : 0 #1
   beta_start : 0.0001 # 0.0001
   beta_end : 0.02  # 0.006 for 300
   ema : True

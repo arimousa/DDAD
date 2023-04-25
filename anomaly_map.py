@@ -22,7 +22,6 @@ def heat_map(output, target, SFE, TFE, bn, constants_dict, config):
     output = output.to(config.model.device)
     target = target.to(config.model.device)
 
-    
         
 
     i_d = color_distance(output, target, config) #torch.sqrt(torch.sum(((output)-(target))**2,dim=1).unsqueeze(1)) # 1 - F.cosine_similarity(patchify(output) , patchify(target), dim=1).to(config.model.device).unsqueeze(1) # color_distance(output, target, config) #torch.sqrt(torch.mean(((output)-(target))**2,dim=1).unsqueeze(1))   #torch.sqrt(torch.sum(((output)-(target))**2,dim=1).unsqueeze(1)) #color_distance(output, target, config)        ((output)-(target))**2  #torch.mean(torch.abs((output)-(target)),dim=1).unsqueeze(1)
@@ -35,8 +34,8 @@ def heat_map(output, target, SFE, TFE, bn, constants_dict, config):
 
     
     # visualalize_distance(output, target, i_d, f_d)
-
-    anomaly_map += 1 * i_d +  f_d #0.1 * i_d +  f_d    # 2 for W5, 4 for W101
+    
+    anomaly_map +=  f_d + 0.6 * i_d    # 2 for W5, 4 for W101
 
     anomaly_map = gaussian_blur2d(
         anomaly_map , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
@@ -103,11 +102,15 @@ def color_distance(image1, image2, config):
     # distance_map = (cmyk_image_1 - cmyk_image_2)**2
     # distance_map = 1 - F.cosine_similarity((image1) , (image2), dim=1).to(config.model.device).unsqueeze(1)
     # distance_map = torch.mean(distance_map, dim=1).unsqueeze(1)
+    # image1 = patchify(image1)
+    # image2 = patchify(image2)
+    # distance_map = 1 - F.cosine_similarity((image1) , (image2), dim=1).to(config.model.device).unsqueeze(1)
     distance_map = torch.mean(torch.abs(image1 - image2), dim=1).unsqueeze(1)
     return distance_map
 
 
 def cal_anomaly_map(fs_list, ft_list, config, out_size=256, amap_mode='mul'):
+    out_size = config.data.image_size
     if amap_mode == 'mul':
         anomaly_map = torch.ones([fs_list[0].shape[0], 1, out_size, out_size]).to(config.model.device)
     else:
@@ -115,11 +118,11 @@ def cal_anomaly_map(fs_list, ft_list, config, out_size=256, amap_mode='mul'):
     a_map_list = []
     # l1 = torch.nn.L1Loss()
     for i in range(len(ft_list)):
-        if i == 0: # or i == 1:
+        if i == 0:
             continue
         fs = fs_list[i]
         ft = ft_list[i]
-
+        # print('fs : ',i, '   ',fs.shape)
         a_map = 1 - F.cosine_similarity(patchify(fs), patchify(ft))
         # a_map = torch.mean(torch.abs((fs) - (ft)),dim = 1) #l1 (fs , ft)
         a_map = torch.unsqueeze(a_map, dim=1)

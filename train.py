@@ -24,7 +24,7 @@ from EMA import EMAHelper
 
 def trainer(model, constants_dict, ema_helper, config):
     optimizer = build_optimizer(model, config)
-    if config.data.name == 'MVTec':
+    if config.data.name == 'MVTec' or config.data.name == 'BTAD' or config.data.name == 'MTD' or config.data.name =='VisA':
         train_dataset = MVTecDataset(
             root= config.data.data_dir,
             category=config.data.category,
@@ -58,7 +58,7 @@ def trainer(model, constants_dict, ema_helper, config):
                 ema_helper.update(model)
             if epoch % 100 == 0 and step == 0:
                 print(f"Epoch {epoch} | Loss: {loss.item()}")
-            if epoch %1000 == 0 and step ==0:
+            if epoch %500 == 0 and step ==0:
                 # sample_plot_image(model, trainloader, constant_dict, epoch, category, config)
                 if config.model.save_model:
                     if config.data.category:

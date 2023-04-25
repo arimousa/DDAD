@@ -39,23 +39,21 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
     for i,(l,p) in enumerate(zip(labels_list, predictions0_1)):
         print('sample : ', i, ' prediction is: ',p.item() ,' label is: ',l.item() , 'prediction is : ', predictions[i].item() ,'\n' ) if l != p else None
 
-    f1_scor = f1(predictions0_1, labels_list)
-    f1_pixel = f1(resutls_embeddings, GT_embeddings)
+    f1_score = f1(predictions0_1, labels_list)
 
     if config.metrics.image_level_AUROC:
         print(f'AUROC: {auroc_score}')
     if config.metrics.pixel_level_AUROC:
         print(f"AUROC pixel level: {auroc_pixel} ")
     if config.metrics.image_level_F1Score:
-        print(f'F1SCORE: {f1_scor}')
-    if config.metrics.pixel_level_F1Score:
-        print(f'F1SCORE pixel level: {f1_pixel}')
+        print(f'F1SCORE: {f1_score}')
+
 
     with open('readme.txt', 'a') as f:
         f.write(
             f"{config.data.category} \n")
         f.write(
-            f"AUROC: {auroc_score}       |    auroc_pixel: {auroc_pixel}    |     F1SCORE: {f1_scor}    |     F1SCORE_pixel: {f1_pixel}   \n")
+            f"AUROC: {auroc_score}       |    auroc_pixel: {auroc_pixel}    |     F1SCORE: {f1_score}      \n")
     roc = roc.reset()
     auroc = auroc.reset()
     f1 = f1.reset()
