@@ -65,6 +65,8 @@ def loss_fucntion1(a, b):
     # l1 = torch.nn.L1Loss()
     loss1 = 0
     for item in range(len(a)):
+        # if item == 0:
+        #     continue
         # ap = (patchify(a[item])).contiguous()
         # bp = (patchify(b[item])).contiguous()
         loss1 += torch.mean(1-cos_loss(a[item].view(a[item].shape[0],-1),b[item].view(b[item].shape[0],-1)))
@@ -111,7 +113,7 @@ def tune_feature_extractor(constants_dict, unet, config):
     # decoder = decoder.to(config.model.device)
 
 
-    if config.data.name == 'MVTec' or config.data.name == 'BTAD' or config.data.name == 'MTD':
+    if config.data.name == 'MVTec' or config.data.name == 'BTAD' or config.data.name == 'MTD' or config.data.name == 'VisA_pytorch':
         train_dataset = MVTecDataset(
             root= config.data.data_dir,
             category=config.data.category,
@@ -157,7 +159,7 @@ def tune_feature_extractor(constants_dict, unet, config):
         # optimizer = torch.optim.Adam(list(decoder.parameters())+list(bn.parameters()),lr=.4e-4, betas=(0.5,0.999)) #config.model.learning_rate        
         optimizer = torch.optim.Adam(t_encoder.parameters(),lr= 1e-4) #config.model.learning_rate        
         
-        for epoch in range(2):
+        for epoch in range(0):
             gama = torch.rand(1).item()
             gama = (gama)
             gama = torch.round(torch.tensor(gama), decimals=2)
@@ -216,41 +218,9 @@ def tune_feature_extractor(constants_dict, unet, config):
 
                 # if step == 5:
                 #     break
-            if epoch % 10 == 0:
-                print(f"Epoch {epoch} | Loss: {loss.item()}")
-
-            if epoch == 10:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_10'))
-                # torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_200'))
-            elif epoch == 1:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_1'))
-            elif epoch == 2:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_2'))
-            elif epoch == 3:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_3'))
-            elif epoch == 5:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_5'))
-            elif epoch == 15:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_15'))
-                # torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_350'))
-            elif epoch == 20:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_20'))
-                # torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
-            elif epoch == 25:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_25'))
-                torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
-            elif epoch == 30:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_30'))
-                torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
-            elif epoch == 35:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_35'))
-                torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
-            elif epoch == 40:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_40'))
-                torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
-            elif epoch == 45:
-                torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_45'))
-                torch.save(bn.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_st300'))
+            # if epoch % 10 == 0:
+            print(f"Epoch {epoch} | Loss: {loss.item()}")
+            # torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,f'encoder_{epoch+1}'))
 
         if config.data.category:
             torch.save(t_encoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_00'))
@@ -259,7 +229,8 @@ def tune_feature_extractor(constants_dict, unet, config):
         #     torch.save(decoder.state_dict(), os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), 'feature'))
     else:
         if config.data.category:
-            checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_10'))
+            checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'encoder_00'))
+            
             # checkpoint_bn = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'bn_200'))
             
         # else:

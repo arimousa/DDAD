@@ -45,38 +45,75 @@ def constant(config):
 
 def build_model(config):
     #model = SimpleUnet()
-    unet = UNetModel(config.data.image_size, 64, dropout=0, n_heads=4 ,in_channels=config.data.imput_channel)
+    unet = UNetModel(config.data.image_size, 64, dropout=0.0, n_heads=4 ,in_channels=config.data.imput_channel)
     return unet
-
-    
 
 def train(args):
     config = OmegaConf.load(args.config)
-    
+    for category in ['fryum']: #
+        unet = build_model(config)
+        print("Num params: ", sum(p.numel() for p in unet.parameters()))
+        unet = unet.to(config.model.device)
+        unet.train()
+        if config.model.ema:
+            ema_helper = EMAHelper(mu=config.model.ema_rate)
+            
+            ema_helper.register(unet)
+        else:
+            ema_helper = None
+        unet = torch.nn.DataParallel(unet)
+        # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'1000'))
+        # unet.load_state_dict(checkpoint)  
+        constants_dict = constant(config)
+        start = time.time()
+        trainer(unet, constants_dict, ema_helper, category, config)
+        end = time.time()
+        print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
+        with open('readme.txt', 'a') as f:
+            f.write('\n training time is {}\n'.format(str(timedelta(seconds=end - start))))
+
+def evaluate(args):
+    start = time.time()
+    config = OmegaConf.load(args.config)
     unet = build_model(config)
-    print("Num params: ", sum(p.numel() for p in unet.parameters()))
-    unet = unet.to(config.model.device)
-    unet.train()
-    if config.model.ema:
+    if config.data.category:
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'1250')) # config.model.checkpoint_name 300+50
+    else:
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '1000'))
+    unet = torch.nn.DataParallel(unet)
+    unet.load_state_dict(checkpoint)    
+    unet.to(config.model.device)
+    unet.eval()
+
+    # unet_condition = SimpleUnet()
+    # if config.data.category:
+    #     checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'condition0')) # config.model.checkpoint_name 300+50
+    # else:
+    #     checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), 'condition1500'))
+    # unet_condition = torch.nn.DataParallel(unet_condition)
+    # unet_condition.load_state_dict(checkpoint)    
+    # unet_condition.to(config.model.device)
+    # unet_condition.eval()
+
+    if False: #config.model.ema:
         ema_helper = EMAHelper(mu=config.model.ema_rate)
+        ema_helper.register(model)
+        ema_helper = torch.nn.DataParallel(ema_helper)
+        ema_helper.load_state_dict(checkpoint)
         
-        ema_helper.register(unet)
+        ema_helper.ema(model)
     else:
         ema_helper = None
-    unet = torch.nn.DataParallel(unet)
-    # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'4500'))
-    # unet.load_state_dict(checkpoint)  
     constants_dict = constant(config)
-    start = time.time()
-    trainer(unet, constants_dict, ema_helper, config)
+    validate(unet, constants_dict, config)
     end = time.time()
-    print('training time on ',config.model.epochs,' epochs is ', str(timedelta(seconds=end - start)),'\n')
-    with open('readme.txt', 'a') as f:
-        f.write('\n training time is {}\n'.format(str(timedelta(seconds=end - start))))
+    print('Test time is ', str(timedelta(seconds=end - start)))
+
+
 
 def train_condition(args):
     config = OmegaConf.load(args.config)
-    
+
     unet_condition = SimpleUnet()
     unet = build_model(config)
     if config.data.category:
@@ -108,43 +145,6 @@ def train_condition(args):
         f.write('\n training time is {}\n'.format(str(timedelta(seconds=end - start))))
 
 
-
-def evaluate(args):
-    start = time.time()
-    config = OmegaConf.load(args.config)
-    unet = build_model(config)
-    if config.data.category:
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'3000')) # config.model.checkpoint_name 300+50
-    else:
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '1000'))
-    unet = torch.nn.DataParallel(unet)
-    unet.load_state_dict(checkpoint)    
-    unet.to(config.model.device)
-    unet.eval()
-
-    # unet_condition = SimpleUnet()
-    # if config.data.category:
-    #     checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'condition0')) # config.model.checkpoint_name 300+50
-    # else:
-    #     checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), 'condition1500'))
-    # unet_condition = torch.nn.DataParallel(unet_condition)
-    # unet_condition.load_state_dict(checkpoint)    
-    # unet_condition.to(config.model.device)
-    # unet_condition.eval()
-
-    if False: #config.model.ema:
-        ema_helper = EMAHelper(mu=config.model.ema_rate)
-        ema_helper.register(model)
-        ema_helper = torch.nn.DataParallel(ema_helper)
-        ema_helper.load_state_dict(checkpoint)
-        
-        ema_helper.ema(model)
-    else:
-        ema_helper = None
-    constants_dict = constant(config)
-    validate(unet, constants_dict, config)
-    end = time.time()
-    print('Test time is ', str(timedelta(seconds=end - start)))
 
 
 

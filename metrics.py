@@ -2,11 +2,74 @@ import torch
 from torchmetrics import ROC, AUROC, F1Score
 import os
 from torchvision.transforms import transforms
+from skimage import measure
+import pandas as pd
+from statistics import mean
+import numpy as np
+from sklearn.metrics import auc
+
+
+def compute_pro(masks, amaps, num_th = 200):
+    resutls_embeddings = amaps[0]
+    for feature in amaps[1:]:
+        resutls_embeddings = torch.cat((resutls_embeddings, feature), 0)
+    amaps =  ((resutls_embeddings - resutls_embeddings.min())/ (resutls_embeddings.max() - resutls_embeddings.min())) 
+
+    amaps = amaps.squeeze(1)
+
+    amaps = amaps.cpu().detach().numpy()
+
+    
+
+    GT_embeddings = masks[0]
+    for feature in masks[1:]:
+        GT_embeddings = torch.cat((GT_embeddings, feature), 0)
+
+    
+    masks = GT_embeddings.squeeze(1).cpu().detach().numpy()
+
+
+
+    min_th = amaps.min()
+    max_th = amaps.max()
+    delta = (max_th - min_th) / num_th
+    binary_amaps = np.zeros_like(amaps, dtype=np.bool)
+    df = pd.DataFrame([], columns=["pro", "fpr", "threshold"])
+
+    for th in np.arange(min_th, max_th, delta):
+        binary_amaps[amaps <= th] = 0
+        binary_amaps[amaps > th] = 1
+
+        pros = []
+        for binary_amap, mask in zip(binary_amaps, masks):
+            for region in measure.regionprops(measure.label(mask)):
+                axes0_ids = region.coords[:, 0]
+                axes1_ids = region.coords[:, 1]
+                tp_pixels = binary_amap[axes0_ids, axes1_ids].sum()
+                pros.append(tp_pixels / region.area)
+
+        inverse_masks = 1 - masks
+        fp_pixels = np.logical_and(inverse_masks , binary_amaps).sum()
+        fpr = fp_pixels / inverse_masks.sum()
+        # print(f"Threshold: {th}, FPR: {fpr}, PRO: {mean(pros)}")
+
+        df = pd.concat([df, pd.DataFrame({"pro": mean(pros), "fpr": fpr, "threshold": th}, index=[0])], ignore_index=True)
+        # df = df.concat({"pro": mean(pros), "fpr": fpr, "threshold": th}, ignore_index=True)
+
+    # Normalize FPR from 0 ~ 1 to 0 ~ 0.3
+    df = df[df["fpr"] < 0.3]
+    df["fpr"] = df["fpr"] / df["fpr"].max()
+
+    pro_auc = auc(df["fpr"], df["pro"])
+    return pro_auc
 
 
 def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
     labels_list = torch.tensor(labels_list)
     predictions = torch.tensor(predictions)
+
+    pro = compute_pro(GT_list, anomaly_map_list, num_th = 200)
+    
     
 
     resutls_embeddings = anomaly_map_list[0]
@@ -23,6 +86,7 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
 
     roc = ROC(task="binary")
     auroc = AUROC(task="binary")
+    
 
     fpr, tpr, thresholds = roc(predictions, labels_list)
     auroc_score = auroc(predictions, labels_list)
@@ -47,13 +111,18 @@ def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
         print(f"AUROC pixel level: {auroc_pixel} ")
     if config.metrics.image_level_F1Score:
         print(f'F1SCORE: {f1_score}')
+    if config.metrics.pro:
+        print(f'PRO: {pro}')
+
+
+    
 
 
     with open('readme.txt', 'a') as f:
         f.write(
             f"{config.data.category} \n")
         f.write(
-            f"AUROC: {auroc_score}       |    auroc_pixel: {auroc_pixel}    |     F1SCORE: {f1_score}      \n")
+            f"AUROC: {auroc_score}       |    auroc_pixel: {auroc_pixel}         |     PRO: {pro}  \n")
     roc = roc.reset()
     auroc = auroc.reset()
     f1 = f1.reset()

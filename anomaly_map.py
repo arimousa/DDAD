@@ -35,7 +35,9 @@ def heat_map(output, target, SFE, TFE, bn, constants_dict, config):
     
     # visualalize_distance(output, target, i_d, f_d)
     
-    anomaly_map +=  f_d + 0.6 * i_d    # 2 for W5, 4 for W101
+    # anomaly_map += 0.3 * f_d +  torch.max(f_d)/ torch.max(i_d) * i_d  
+    # anomaly_map += f_d    
+    anomaly_map += i_d      
 
     anomaly_map = gaussian_blur2d(
         anomaly_map , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)

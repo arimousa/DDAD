@@ -7,7 +7,7 @@ from dataset import *
 from visualize import *
 from anomaly_map import *
 from backbone import *
-from metrics import metric
+from metrics import *
 from feature_extractor import *
 import time
 from datetime import timedelta
@@ -60,7 +60,7 @@ def cr_function(x, train_mean, feature_extractor, config):
 
 def validate(unet, constants_dict, config):
 
-    if config.data.name == 'MVTec' or config.data.name == 'BTAD' or config.data.name == 'MTD' or config.data.name =='VisA':
+    if config.data.name == 'MVTec' or config.data.name == 'BTAD' or config.data.name == 'MTD' or config.data.name =='VisA_pytorch':
         test_dataset = MVTecDataset(
             root= config.data.data_dir,
             category=config.data.category,
@@ -103,7 +103,7 @@ def validate(unet, constants_dict, config):
                 seq = range(0 , config.model.test_trajectoy_steps2, config.model.skip2)
 
                 cr = 0.2 # 0.2 for prediction interpolation
-                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config,  eta2= 0 , eta3=0, constants_dict=constants_dict ,eraly_stop = False)
+                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config,  eta2= 2 , eta3=1, constants_dict=constants_dict ,eraly_stop = False)
                 data_reconstructed = reconstructed[-1]
 
                 # visualize_reconstructed(data, reconstructed, k)
@@ -132,7 +132,7 @@ def validate(unet, constants_dict, config):
 
     # start = time.time()
 
-    if config.data.name == 'MVTec' or config.data.name == 'BTAD' or config.data.name == 'MTD':
+    if config.data.name == 'MVTec' or config.data.name == 'BTAD' or config.data.name == 'MTD' or config.data.name =='VisA_pytorch':
         with torch.no_grad():
             for data, targets, labels in testloader:
                 data = data.to(config.model.device)
@@ -149,17 +149,17 @@ def validate(unet, constants_dict, config):
                 # reconstructed, rec_x0 = efficient_generalized_steps(config, constants_dict, noisy_image, seq, unet,  constants_dict['betas'], H_funcs, data, gama = .00,sigma_0 = 0.1, cls_fn=None, classes=None, early_stop=False)
 
                 cr = 2 # 0.2 for prediction interpolation
-                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config, eta2=4 , eta3=2 , constants_dict=constants_dict ,eraly_stop = False)
+                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config, eta2= 2 , eta3=2 , constants_dict=constants_dict ,eraly_stop = False)
                 data_reconstructed = reconstructed[-1]
 
 
                 anomaly_map = heat_map(data_reconstructed, data, SFE, TFE, bn, constants_dict, config)
 
-                # transform = transforms.Compose([
-                #     transforms.CenterCrop((224)), 
-                # ])
-                # anomaly_map = transform(anomaly_map)
-                # targets = transform(targets)
+                transform = transforms.Compose([
+                    transforms.CenterCrop((224)), 
+                ])
+                anomaly_map = transform(anomaly_map)
+                targets = transform(targets)
 
                 
                 forward_list.append(data)
@@ -171,7 +171,8 @@ def validate(unet, constants_dict, config):
                 for pred, label in zip(anomaly_map, labels):
                     labels_list.append(0 if label == 'good' else 1)
                     # predictions.append( 1 if torch.max(pred).item() > 0.1 else 0)
-                    predictions.append(torch.max(pred).item() )
+                    predictions.append(torch.max(pred).item())
+                    # predictions.append(torch.mean(torch.topk(pred,5)[0]).item())
                 
                 
 
@@ -182,6 +183,8 @@ def validate(unet, constants_dict, config):
     
     threshold = metric(labels_list, predictions, anomaly_map_list, GT_list, config)
     print('threshold: ', threshold)
+
+    
 
     reconstructed_list = torch.cat(reconstructed_list, dim=0)
     forward_list = torch.cat(forward_list, dim=0)

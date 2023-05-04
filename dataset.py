@@ -1,7 +1,9 @@
 import os
 from glob import glob
 from pathlib import Path
+import shutil
 import numpy as np
+import csv
 import torch
 import torch.utils.data
 from PIL import Image
@@ -181,37 +183,107 @@ def load_data(dataset_name='cifar10',normal_class=0,batch_size= 32):
     return train_dataloader, test_dataloader
 
 
-# def load_data(dataset_name='mnist',normal_class=0,batch_size= 32):
-#     img_transform = transforms.Compose([
-#         # transforms.Resize((32, 32)),
-#         transforms.ToTensor(),
-#         # transforms.Normalize(mean=(0.485, 0.456, 0.406), std=(0.229, 0.224, 0.225))
-#         transforms.Lambda(lambda t: (t * 2) - 1)
-#     ])
 
-#     os.makedirs("./Dataset/MNIST/train", exist_ok=True)
-#     dataset = MNIST('./Dataset/MNIST/train', train=True, download=True, transform=img_transform)
-#     print("Cifar10 DataLoader Called...")
-#     print("All Train Data: ", dataset.data.shape)
-#     dataset.data = dataset.data[np.array(dataset.targets) == normal_class]
-#     dataset.targets = [normal_class] * dataset.data.shape[0]
-#     print("Normal Train Data: ", dataset.data.shape)
+# Copyright Amazon.com, Inc. or its affiliates. All Rights Reserved.
+# https://github.com/amazon-science/spot-diff/blob/main/utils/prepare_data.py
+# def _mkdirs_if_not_exists(path):
+#     if not os.path.exists(path):
+#         os.makedirs(path)
 
-#     os.makedirs("./Dataset/MNIST/test", exist_ok=True)
-#     test_set = MNIST("./Dataset/MNIST/test", train=False, download=True, transform=img_transform)
-#     print("Test Train Data:", test_set.data.shape)
+# def VisA():
+#     data_list = ['candle', 'capsules', 'cashew', 'chewinggum', 'fryum', 'macaroni1', 'macaroni2', 'pcb1', 'pcb2',
+#                 'pcb3', 'pcb4', 'pipe_fryum']
+#     split_type = '1cls'
+#     split_file = 'datasets/VisA/split_csv/1cls.csv' #'./split_csv/1cls.csv'
+#     data_folder = 'datasets/VisA/'
+#     save_folder = os.path.join('./VisA_pytorch/', split_type)
 
-#     train_dataloader = torch.utils.data.DataLoader(
-#         dataset,
-#         batch_size=batch_size,
-#         shuffle=True,
-#     )
-#     test_dataloader = torch.utils.data.DataLoader(
-#         test_set,
-#         batch_size=32,
-#         shuffle=False,
-#     )
+#     if split_type == '1cls':
+#         for data in data_list:
+#             train_folder = os.path.join(save_folder, data, 'train')
+#             test_folder = os.path.join(save_folder, data, 'test')
+#             mask_folder = os.path.join(save_folder, data, 'ground_truth')
 
-#     return train_dataloader, test_dataloader
+#             train_img_good_folder = os.path.join(train_folder, 'good')
+#             test_img_good_folder = os.path.join(test_folder, 'good')
+#             test_img_bad_folder = os.path.join(test_folder, 'bad')
+#             test_mask_bad_folder = os.path.join(mask_folder, 'bad')
 
+#             _mkdirs_if_not_exists(train_img_good_folder)
+#             _mkdirs_if_not_exists(test_img_good_folder)
+#             _mkdirs_if_not_exists(test_img_bad_folder)
+#             _mkdirs_if_not_exists(test_mask_bad_folder)
 
+#         with open(split_file, 'r') as file:
+#             csvreader = csv.reader(file)
+#             header = next(csvreader)
+#             for row in csvreader:
+#                 object, set, label, image_path, mask_path = row
+#                 if label == 'normal':
+#                     label = 'good'
+#                 else:
+#                     label = 'bad'
+#                 image_name = image_path.split('/')[-1]
+#                 mask_name = mask_path.split('/')[-1]
+#                 img_src_path = os.path.join(data_folder, image_path)
+#                 msk_src_path = os.path.join(data_folder, mask_path)
+#                 img_dst_path = os.path.join(save_folder, object, set, label, image_name)
+#                 msk_dst_path = os.path.join(save_folder, object, 'ground_truth', label, mask_name)
+#                 shutil.copyfile(img_src_path, img_dst_path)
+#                 if set == 'test' and label == 'bad':
+#                     mask = Image.open(msk_src_path)
+
+#                     # binarize mask
+#                     mask_array = np.array(mask)
+#                     mask_array[mask_array != 0] = 255
+#                     mask = Image.fromarray(mask_array)
+
+#                     mask.save(msk_dst_path)
+#     else:
+#         for data in data_list:
+#             train_folder = os.path.join(save_folder, data, 'train')
+#             test_folder = os.path.join(save_folder, data, 'test')
+#             mask_folder = os.path.join(save_folder, data, 'ground_truth')
+#             train_mask_folder = os.path.join(mask_folder, 'train')
+#             test_mask_folder = os.path.join(mask_folder, 'test')
+
+#             train_img_good_folder = os.path.join(train_folder, 'good')
+#             train_img_bad_folder = os.path.join(train_folder, 'bad')
+#             test_img_good_folder = os.path.join(test_folder, 'good')
+#             test_img_bad_folder = os.path.join(test_folder, 'bad')
+
+#             train_mask_bad_folder = os.path.join(train_mask_folder, 'bad')
+#             test_mask_bad_folder = os.path.join(test_mask_folder, 'bad')
+
+#             _mkdirs_if_not_exists(train_img_good_folder)
+#             _mkdirs_if_not_exists(train_img_bad_folder)
+#             _mkdirs_if_not_exists(test_img_good_folder)
+#             _mkdirs_if_not_exists(test_img_bad_folder)
+#             _mkdirs_if_not_exists(train_mask_bad_folder)
+#             _mkdirs_if_not_exists(test_mask_bad_folder)
+
+#         with open(split_file, 'r') as file:
+#             csvreader = csv.reader(file)
+#             header = next(csvreader)
+#             for row in csvreader:
+#                 object, set, label, image_path, mask_path = row
+#                 if label == 'normal':
+#                     label = 'good'
+#                 else:
+#                     label = 'bad'
+#                 image_name = image_path.split('/')[-1]
+#                 mask_name = mask_path.split('/')[-1]
+#                 img_src_path = os.path.join(data_folder, image_path)
+#                 msk_src_path = os.path.join(data_folder, mask_path)
+#                 img_dst_path = os.path.join(save_folder, object, set, label, image_name)
+#                 msk_dst_path = os.path.join(save_folder, object, 'ground_truth', set, label, mask_name)
+#                 shutil.copyfile(img_src_path, img_dst_path)
+#                 if label == 'bad':
+#                     mask = Image.open(msk_src_path)
+
+#                     # binarize mask
+#                     mask_array = np.array(mask)
+#                     mask_array[mask_array != 0] = 255
+#                     mask = Image.fromarray(mask_array)
+
+#                     mask.save(msk_dst_path)
