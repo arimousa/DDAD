@@ -6,7 +6,7 @@ import os
 from forward_process import *
 from dataset import *
 from sample import *
-
+import cv2
 from noise import *
 
 def visualalize_rgb(image1,image2,image):
@@ -142,13 +142,32 @@ def visualize(image, noisy_image, GT, pred_mask, anomaly_map, category) :
         plt.imshow(show_tensor_mask(pred_mask[idx]))
         plt.title('normal' if torch.max(pred_mask[idx]) == 0 else 'abnormal', color="g" if torch.max(pred_mask[idx]) == 0 else "r")
 
+        
+        
+        # ano_map = min_max_norm(show_tensor_image(anomaly_map[idx]))
+        # ano_map = cvt2heatmap(ano_map)
+        # ano_map = show_cam_on_image(show_tensor_image(image[idx]), ano_map)
+
         plt.subplot(1, 3, 3)
         plt.imshow(show_tensor_image(anomaly_map[idx]))
         plt.title('heat map')
         plt.savefig('results/{}sample{}heatmap.png'.format(category,idx))
         plt.close()
 
+def min_max_norm(image):
+    a_min, a_max = image.min(), image.max()
+    return (image-a_min)/(a_max - a_min)
 
+def cvt2heatmap(gray):
+    heatmap = cv2.applyColorMap(np.uint8(gray), cv2.COLORMAP_JET)
+    return heatmap
+
+def show_cam_on_image(img, anomaly_map):
+    #if anomaly_map.shape != img.shape:
+    #    anomaly_map = cv2.applyColorMap(np.uint8(anomaly_map), cv2.COLORMAP_JET)
+    cam = np.float32(anomaly_map)/255 + np.float32(img)/255
+    cam = cam / np.max(cam)
+    return np.uint8(255 * cam)
 
 def show_tensor_image(image):
     reverse_transforms = transforms.Compose([
@@ -166,10 +185,10 @@ def show_tensor_image(image):
 
 def show_tensor_mask(image):
     reverse_transforms = transforms.Compose([
-       # transforms.Lambda(lambda t: (t + 1) / 2),
+    #    transforms.Lambda(lambda t: (t + 1) / 2),
         transforms.Lambda(lambda t: t.permute(1, 2, 0)), # CHW to HWC
        # transforms.Lambda(lambda t: t * 255.),
-        transforms.Lambda(lambda t: t.cpu().numpy().astype(np.uint8)),
+        transforms.Lambda(lambda t: t.cpu().numpy().astype(np.int8)),
      #   transforms.ToPILImage(),
     ])
 

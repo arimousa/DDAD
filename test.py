@@ -149,7 +149,7 @@ def validate(unet, constants_dict, config):
                 # reconstructed, rec_x0 = efficient_generalized_steps(config, constants_dict, noisy_image, seq, unet,  constants_dict['betas'], H_funcs, data, gama = .00,sigma_0 = 0.1, cls_fn=None, classes=None, early_stop=False)
 
                 cr = 2 # 0.2 for prediction interpolation
-                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config, eta2= 2 , eta3=2 , constants_dict=constants_dict ,eraly_stop = False)
+                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config, eta2= 4, eta3=0 , constants_dict=constants_dict ,eraly_stop = False)
                 data_reconstructed = reconstructed[-1]
 
 

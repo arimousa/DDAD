@@ -50,7 +50,7 @@ def build_model(config):
 
 def train(args):
     config = OmegaConf.load(args.config)
-    for category in ['fryum']: #
+    for category in ['second', 'third']: #
         unet = build_model(config)
         print("Num params: ", sum(p.numel() for p in unet.parameters()))
         unet = unet.to(config.model.device)
@@ -62,7 +62,7 @@ def train(args):
         else:
             ema_helper = None
         unet = torch.nn.DataParallel(unet)
-        # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'1000'))
+        # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'500'))
         # unet.load_state_dict(checkpoint)  
         constants_dict = constant(config)
         start = time.time()
@@ -77,7 +77,7 @@ def evaluate(args):
     config = OmegaConf.load(args.config)
     unet = build_model(config)
     if config.data.category:
-        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'1250')) # config.model.checkpoint_name 300+50
+        checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'5000')) # config.model.checkpoint_name 300+50
     else:
         checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), '1000'))
     unet = torch.nn.DataParallel(unet)

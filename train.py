@@ -69,7 +69,7 @@ def trainer(model, constants_dict, ema_helper, category, config):
                             model_save_dir = os.path.join(os.getcwd(), config.model.checkpoint_dir)
                         if not os.path.exists(model_save_dir):
                             os.mkdir(model_save_dir)
-                        torch.save(model.state_dict(), os.path.join(model_save_dir, str(epoch))) #config.model.checkpoint_name
+                        torch.save(model.state_dict(), os.path.join(model_save_dir, str(epoch+1500))) #config.model.checkpoint_name
 
                 # if epoch %150 == 0  and step ==0: #and epoch>0
                 #         validate(model, constants_dict, config, category, v_train)
@@ -82,7 +82,7 @@ def trainer(model, constants_dict, ema_helper, category, config):
                 model_save_dir = os.path.join(os.getcwd(), config.model.checkpoint_dir)
             if not os.path.exists(model_save_dir):
                 os.mkdir(model_save_dir)
-            torch.save(model.state_dict(), os.path.join(model_save_dir, str(config.model.epochs))) #config.model.checkpoint_name
+            torch.save(model.state_dict(), os.path.join(model_save_dir, str(config.model.epochs+1500))) #config.model.checkpoint_name
    
         writer.flush()
         writer.close()

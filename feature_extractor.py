@@ -184,7 +184,7 @@ def tune_feature_extractor(constants_dict, unet, config):
                 # reconstructed, rec_x0 = efficient_generalized_steps(config, constants_dict, noisy_image, seq, unet,  constants_dict['betas'], H_funcs, data2, gama = .00,sigma_0 = 0.1, cls_fn=None, classes=None, early_stop=False)
 
 
-                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config, eta2=2, eta3=1, constants_dict=constants_dict, eraly_stop = False)
+                reconstructed, rec_x0 = my_generalized_steps(data, noisy_image, seq, unet, constants_dict['betas'], config, eta2=3, eta3=0, constants_dict=constants_dict, eraly_stop = False)
                 # reconstructed, rec_x0 = generalized_steps(noisy_image, seq, unet, constants_dict['betas'], config)
                 data_reconstructed = reconstructed[-1].to(config.model.device)
                 
