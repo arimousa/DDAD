@@ -2,7 +2,7 @@
 
 This repository is the official implementation of DDAD
 
-![Framework](imges/DDAD_Framework.png)
+![Framework](images/DDAD_Framework.png)
 
 
 ## Requirements
@@ -71,7 +71,7 @@ Expected results for MVTec AD:
 | Detection | 97.8% | 100% | 100% | 100% | 99.8% | 100% | 99.7% | 98.1% | 99.9% | 99.0% | 98.6% | 99.5% | 100% | 99.6% | 100% | 99.5% 
 | Localization | (98.0%,91.0%) |  (99.6%,98.5%) | (99.3%,98.3%) | (98.5%,96.7%) | (96.8%,90.0%) | (98.9%,94.8%) | (98.4%,90.9%) | (96.2%,90.7%) | (99.0%,87.3%) | (96.8%,91.8%) | (99.2%,95.6%) | (99.4%,92.0%) | (98.9%,95.0%) | (92.6%,87.2%) | (98.6%,94.1%) | (98,1%,92.9%)
 
-![Framework](imges/Qualitative.png)
+![Framework](iamges/Qualitative.png)
 
 ## Citation
 
