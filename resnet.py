@@ -383,7 +383,7 @@ class AttnBottleneck(nn.Module):
 
         return out
 
-class BN_layer(nn.Module):
+
     def __init__(self,
                  block: Type[Union[BasicBlock, Bottleneck]],
                  layers: int,
@@ -470,7 +470,7 @@ def resnet18(pretrained: bool = False, progress: bool = True,**kwargs: Any) -> R
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     return _resnet('resnet18', BasicBlock, [2, 2, 2, 2], pretrained, progress,
-                   **kwargs), BN_layer(AttnBasicBlock,2,**kwargs)
+                   **kwargs)
 
 
 def resnet34(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
@@ -481,7 +481,7 @@ def resnet34(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> 
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     return _resnet('resnet34', BasicBlock, [3, 4, 6, 3], pretrained, progress,
-                   **kwargs), BN_layer(AttnBasicBlock,3,**kwargs)
+                   **kwargs)
 
 
 def resnet50(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
@@ -492,7 +492,7 @@ def resnet50(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> 
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     return _resnet('resnet50', Bottleneck, [3, 4, 6, 3], pretrained, progress,
-                   **kwargs), BN_layer(AttnBottleneck,3,**kwargs)
+                   **kwargs)
 
 
 def resnet101(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
@@ -503,7 +503,7 @@ def resnet101(pretrained: bool = False, progress: bool = True, **kwargs: Any) ->
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     return _resnet('resnet101', Bottleneck, [3, 4, 23, 3], pretrained, progress,
-                   **kwargs), BN_layer(AttnBasicBlock,3,**kwargs)
+                   **kwargs)
 
 
 def resnet152(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
@@ -514,7 +514,7 @@ def resnet152(pretrained: bool = False, progress: bool = True, **kwargs: Any) ->
         progress (bool): If True, displays a progress bar of the download to stderr
     """
     return _resnet('resnet152', Bottleneck, [3, 8, 36, 3], pretrained, progress,
-                   **kwargs), BN_layer(AttnBottleneck,3,**kwargs)
+                   **kwargs)
 
 
 def resnext50_32x4d(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
@@ -556,7 +556,7 @@ def wide_resnet50_2(pretrained: bool = False, progress: bool = True, **kwargs: A
     """
     kwargs['width_per_group'] = 64 * 2
     return _resnet('wide_resnet50_2', Bottleneck, [3, 4, 6, 3],
-                   pretrained, progress, **kwargs), BN_layer(AttnBottleneck,3,**kwargs)
+                   pretrained, progress, **kwargs)
 
 
 def wide_resnet101_2(pretrained: bool = False, progress: bool = True, **kwargs: Any) -> ResNet:
@@ -572,5 +572,5 @@ def wide_resnet101_2(pretrained: bool = False, progress: bool = True, **kwargs: 
     """
     kwargs['width_per_group'] = 64 * 2
     return _resnet('wide_resnet101_2', Bottleneck, [3, 4, 23, 3],
-                   pretrained, progress, **kwargs), BN_layer(AttnBottleneck,3,**kwargs)
+                   pretrained, progress, **kwargs)
 

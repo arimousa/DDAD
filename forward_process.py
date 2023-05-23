@@ -1,11 +1,8 @@
 import torch
-from utilities import *
 import matplotlib.pyplot as plt
 import random
 import matplotlib.pyplot as plt
-from utilities import *
 import numpy
-from noise import *
 
 
 
@@ -18,10 +15,10 @@ def forward_diffusion_sample(x_0, t, constant_dict, config):
     """
     sqrt_alphas_cumprod, sqrt_one_minus_alphas_cumprod= constant_dict['sqrt_alphas_cumprod'], constant_dict['sqrt_one_minus_alphas_cumprod']
 
-    noise = get_noise(x_0, config)
+    noise = torch.randn_like(x_0).to(config.model.device)
     device = config.model.device
 
-    sqrt_alphas_cumprod_t = get_index_from_list(sqrt_alphas_cumprod, t, x_0.shape, config)
+    sqrt_alphas_cumprod_t = get_index_from_list(sqrt_alphas_cumprod, t, x_0.shape)
     sqrt_one_minus_alphas_cumprod_t = get_index_from_list(
         sqrt_one_minus_alphas_cumprod, t, x_0.shape, config
     )
@@ -33,9 +30,12 @@ def forward_diffusion_sample(x_0, t, constant_dict, config):
     return x, noise
 
 
+def get_index_from_list(vals, t, x_shape):
+    """ 
+    Returns a specific index t of a passed list of values vals
+    while considering the batch dimension.
+    """
+    batch_size = t.shape[0]
+    out = vals.gather(-1, t.cpu())
+    return out.reshape(batch_size, *((1,) * (len(x_shape) - 1))).to(t.device)
 
-def forward_ti_steps(t, ti, x_t_ti, x_0, beta, config):
-    x_t_ti = x_t_ti.to(config.model.device)
-    noise = get_noise(x_t_ti, config)
-    x_t = x_t_ti + (compute_alpha(beta, t, config).sqrt() - compute_alpha(beta, t-ti, config).sqrt()) * x_0 + ((1 - compute_alpha(beta, t, config)).sqrt() - (1 - compute_alpha(beta, t-ti, config)).sqrt()) * noise
-    return x_t

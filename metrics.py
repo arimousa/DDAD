@@ -7,29 +7,20 @@ import pandas as pd
 from statistics import mean
 import numpy as np
 from sklearn.metrics import auc
+from sklearn import metrics
 
-
+#https://github.com/hq-deng/RD4AD/blob/main/test.py#L337
 def compute_pro(masks, amaps, num_th = 200):
     resutls_embeddings = amaps[0]
     for feature in amaps[1:]:
         resutls_embeddings = torch.cat((resutls_embeddings, feature), 0)
     amaps =  ((resutls_embeddings - resutls_embeddings.min())/ (resutls_embeddings.max() - resutls_embeddings.min())) 
-
     amaps = amaps.squeeze(1)
-
     amaps = amaps.cpu().detach().numpy()
-
-    
-
-    GT_embeddings = masks[0]
+    gt_embeddings = masks[0]
     for feature in masks[1:]:
-        GT_embeddings = torch.cat((GT_embeddings, feature), 0)
-
-    
-    masks = GT_embeddings.squeeze(1).cpu().detach().numpy()
-
-
-
+        gt_embeddings = torch.cat((gt_embeddings, feature), 0)
+    masks = gt_embeddings.squeeze(1).cpu().detach().numpy()
     min_th = amaps.min()
     max_th = amaps.max()
     delta = (max_th - min_th) / num_th
@@ -64,66 +55,57 @@ def compute_pro(masks, amaps, num_th = 200):
     return pro_auc
 
 
-def metric(labels_list, predictions, anomaly_map_list, GT_list, config):
+def metric(labels_list, predictions, anomaly_map_list, gt_list, config):
     labels_list = torch.tensor(labels_list)
     predictions = torch.tensor(predictions)
-
-    pro = compute_pro(GT_list, anomaly_map_list, num_th = 200)
-    
-    
-
+    pro = compute_pro(gt_list, anomaly_map_list, num_th = 200)
     resutls_embeddings = anomaly_map_list[0]
     for feature in anomaly_map_list[1:]:
         resutls_embeddings = torch.cat((resutls_embeddings, feature), 0)
     resutls_embeddings =  ((resutls_embeddings - resutls_embeddings.min())/ (resutls_embeddings.max() - resutls_embeddings.min())) 
 
-    GT_embeddings = GT_list[0]
-    for feature in GT_list[1:]:
-        GT_embeddings = torch.cat((GT_embeddings, feature), 0)
+    gt_embeddings = gt_list[0]
+    for feature in gt_list[1:]:
+        gt_embeddings = torch.cat((gt_embeddings, feature), 0)
 
     resutls_embeddings = resutls_embeddings.clone().detach().requires_grad_(False)
-    GT_embeddings = GT_embeddings.clone().detach().requires_grad_(False)
+    gt_embeddings = gt_embeddings.clone().detach().requires_grad_(False)
 
-    roc = ROC(task="binary")
     auroc = AUROC(task="binary")
     
-
-    fpr, tpr, thresholds = roc(predictions, labels_list)
     auroc_score = auroc(predictions, labels_list)
 
-    GT_embeddings = torch.flatten(GT_embeddings).type(torch.bool).cpu().detach()
+    gt_embeddings = torch.flatten(gt_embeddings).type(torch.bool).cpu().detach()
     resutls_embeddings = torch.flatten(resutls_embeddings).cpu().detach()
 
-    auroc_pixel = auroc(resutls_embeddings, GT_embeddings)
-    thresholdOpt_index = torch.argmax(tpr - fpr)
-    thresholdOpt = thresholds[thresholdOpt_index]
+    auroc_pixel = auroc(resutls_embeddings, gt_embeddings)
 
-    f1 = F1Score(task="binary")
+    r_gt_embeddings = gt_embeddings.cpu().detach().numpy().ravel()
+    r_resutls_embeddings = resutls_embeddings.cpu().detach().numpy().ravel()
+    precision, recall, thresholds = metrics.precision_recall_curve(
+        r_gt_embeddings.astype(int), r_resutls_embeddings
+    )
+    F1_scores = np.divide(
+        2 * precision * recall,
+        precision + recall,
+        out=np.zeros_like(precision),
+        where=(precision + recall) != 0,
+    )
+
+    thresholdOpt = thresholds[np.argmax(F1_scores)]
+
+
     predictions0_1 = (predictions > thresholdOpt).int()
     for i,(l,p) in enumerate(zip(labels_list, predictions0_1)):
-        print('sample : ', i, ' prediction is: ',p.item() ,' label is: ',l.item() , 'prediction is : ', predictions[i].item() ,'\n' ) if l != p else None
+        print('Sample : ', i, ' predicted as: ',p.item() ,' label is: ',l.item(),'\n' ) if l != p else None
 
-    f1_score = f1(predictions0_1, labels_list)
 
     if config.metrics.image_level_AUROC:
         print(f'AUROC: {auroc_score}')
     if config.metrics.pixel_level_AUROC:
         print(f"AUROC pixel level: {auroc_pixel} ")
-    if config.metrics.image_level_F1Score:
-        print(f'F1SCORE: {f1_score}')
     if config.metrics.pro:
         print(f'PRO: {pro}')
-
-
-    
-
-
-    with open('readme.txt', 'a') as f:
-        f.write(
-            f"{config.data.category} \n")
-        f.write(
-            f"AUROC: {auroc_score}       |    auroc_pixel: {auroc_pixel}         |     PRO: {pro}  \n")
-    roc = roc.reset()
+        
     auroc = auroc.reset()
-    f1 = f1.reset()
     return thresholdOpt
