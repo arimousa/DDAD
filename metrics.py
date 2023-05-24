@@ -9,51 +9,6 @@ import numpy as np
 from sklearn.metrics import auc
 from sklearn import metrics
 
-#https://github.com/hq-deng/RD4AD/blob/main/test.py#L337
-def compute_pro(masks, amaps, num_th = 200):
-    resutls_embeddings = amaps[0]
-    for feature in amaps[1:]:
-        resutls_embeddings = torch.cat((resutls_embeddings, feature), 0)
-    amaps =  ((resutls_embeddings - resutls_embeddings.min())/ (resutls_embeddings.max() - resutls_embeddings.min())) 
-    amaps = amaps.squeeze(1)
-    amaps = amaps.cpu().detach().numpy()
-    gt_embeddings = masks[0]
-    for feature in masks[1:]:
-        gt_embeddings = torch.cat((gt_embeddings, feature), 0)
-    masks = gt_embeddings.squeeze(1).cpu().detach().numpy()
-    min_th = amaps.min()
-    max_th = amaps.max()
-    delta = (max_th - min_th) / num_th
-    binary_amaps = np.zeros_like(amaps, dtype=np.bool)
-    df = pd.DataFrame([], columns=["pro", "fpr", "threshold"])
-
-    for th in np.arange(min_th, max_th, delta):
-        binary_amaps[amaps <= th] = 0
-        binary_amaps[amaps > th] = 1
-
-        pros = []
-        for binary_amap, mask in zip(binary_amaps, masks):
-            for region in measure.regionprops(measure.label(mask)):
-                axes0_ids = region.coords[:, 0]
-                axes1_ids = region.coords[:, 1]
-                tp_pixels = binary_amap[axes0_ids, axes1_ids].sum()
-                pros.append(tp_pixels / region.area)
-
-        inverse_masks = 1 - masks
-        fp_pixels = np.logical_and(inverse_masks , binary_amaps).sum()
-        fpr = fp_pixels / inverse_masks.sum()
-        # print(f"Threshold: {th}, FPR: {fpr}, PRO: {mean(pros)}")
-
-        df = pd.concat([df, pd.DataFrame({"pro": mean(pros), "fpr": fpr, "threshold": th}, index=[0])], ignore_index=True)
-        # df = df.concat({"pro": mean(pros), "fpr": fpr, "threshold": th}, ignore_index=True)
-
-    # Normalize FPR from 0 ~ 1 to 0 ~ 0.3
-    df = df[df["fpr"] < 0.3]
-    df["fpr"] = df["fpr"] / df["fpr"].max()
-
-    pro_auc = auc(df["fpr"], df["pro"])
-    return pro_auc
-
 
 def metric(labels_list, predictions, anomaly_map_list, gt_list, config):
     labels_list = torch.tensor(labels_list)
@@ -109,3 +64,51 @@ def metric(labels_list, predictions, anomaly_map_list, gt_list, config):
         
     auroc = auroc.reset()
     return thresholdOpt
+
+
+
+
+#https://github.com/hq-deng/RD4AD/blob/main/test.py#L337
+def compute_pro(masks, amaps, num_th = 200):
+    resutls_embeddings = amaps[0]
+    for feature in amaps[1:]:
+        resutls_embeddings = torch.cat((resutls_embeddings, feature), 0)
+    amaps =  ((resutls_embeddings - resutls_embeddings.min())/ (resutls_embeddings.max() - resutls_embeddings.min())) 
+    amaps = amaps.squeeze(1)
+    amaps = amaps.cpu().detach().numpy()
+    gt_embeddings = masks[0]
+    for feature in masks[1:]:
+        gt_embeddings = torch.cat((gt_embeddings, feature), 0)
+    masks = gt_embeddings.squeeze(1).cpu().detach().numpy()
+    min_th = amaps.min()
+    max_th = amaps.max()
+    delta = (max_th - min_th) / num_th
+    binary_amaps = np.zeros_like(amaps, dtype=np.bool)
+    df = pd.DataFrame([], columns=["pro", "fpr", "threshold"])
+
+    for th in np.arange(min_th, max_th, delta):
+        binary_amaps[amaps <= th] = 0
+        binary_amaps[amaps > th] = 1
+
+        pros = []
+        for binary_amap, mask in zip(binary_amaps, masks):
+            for region in measure.regionprops(measure.label(mask)):
+                axes0_ids = region.coords[:, 0]
+                axes1_ids = region.coords[:, 1]
+                tp_pixels = binary_amap[axes0_ids, axes1_ids].sum()
+                pros.append(tp_pixels / region.area)
+
+        inverse_masks = 1 - masks
+        fp_pixels = np.logical_and(inverse_masks , binary_amaps).sum()
+        fpr = fp_pixels / inverse_masks.sum()
+        # print(f"Threshold: {th}, FPR: {fpr}, PRO: {mean(pros)}")
+
+        df = pd.concat([df, pd.DataFrame({"pro": mean(pros), "fpr": fpr, "threshold": th}, index=[0])], ignore_index=True)
+        # df = df.concat({"pro": mean(pros), "fpr": fpr, "threshold": th}, ignore_index=True)
+
+    # Normalize FPR from 0 ~ 1 to 0 ~ 0.3
+    df = df[df["fpr"] < 0.3]
+    df["fpr"] = df["fpr"] / df["fpr"].max()
+
+    pro_auc = auc(df["fpr"], df["pro"])
+    return pro_auc

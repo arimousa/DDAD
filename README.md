@@ -6,7 +6,7 @@ This repository is the official implementation of DDAD
 
 
 ## Requirements
-
+This repository is implemented and tested on Python 3.8 and PyTorch 1.13.
 To install requirements:
 
 ```setup
@@ -66,8 +66,8 @@ Following is the expected results on VisA Dataset. Anomaly Detection (Image AURO
 | Localization | (98.4%,95.2%) |  (99.6%,99.6%) | (93.0%,80.5%) | (97.6%,84.4%) | (93.6%,93.3%) | (99.3%,99.1%) | (99.2%,98.5%) | (94.3%,94.4%) | (97.0%,90.6%) | (98.1%,95.2%) | (98.3%,92.3%) | (96.5%,85.2%) |(97.0%,91.3%)
 
 Expected results for MVTec AD:
-| Category | Carpet | Grid |  Leather | Tile | Wood | Bottle |  Cable | Capsule | Hazelnut | Pill | Screw | Toothbrush | Transistor | Zipper |Average
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Category | Carpet | Grid |  Leather | Tile | Wood | Bottle |  Cable | Capsule | Hazel nut | Metalnut | Pill | Screw | Toothbrush | Transistor | Zipper |Average
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
 | Detection | 97.8% | 100% | 100% | 100% | 99.8% | 100% | 99.7% | 98.1% | 99.9% | 99.0% | 98.6% | 99.5% | 100% | 99.6% | 100% | 99.5% 
 | Localization | (98.0%,91.0%) |  (99.6%,98.5%) | (99.3%,98.3%) | (98.5%,96.7%) | (96.8%,90.0%) | (98.9%,94.8%) | (98.4%,90.9%) | (96.2%,90.7%) | (99.0%,87.3%) | (96.8%,91.8%) | (99.2%,95.6%) | (99.4%,92.0%) | (98.9%,95.0%) | (92.6%,87.2%) | (98.6%,94.1%) | (98,1%,92.9%)
 

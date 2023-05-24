@@ -10,10 +10,18 @@ import numpy as np
 
 
 def heat_map(output, target, FE, config):
+    '''
+    Compute the anomaly map
+    :param output: the output of the reconstruction
+    :param target: the target image
+    :param FE: the feature extractor
+    :param sigma: the sigma of the gaussian kernel
+    :param i_d: the pixel distance
+    :param f_d: the feature distance
+    '''
     sigma = 4
     kernel_size = 2 * int(4 * sigma + 0.5) +1
     anomaly_map = 0
-
 
     output = output.to(config.model.device)
     target = target.to(config.model.device)
@@ -35,21 +43,26 @@ def heat_map(output, target, FE, config):
 
 
 
-def pixel_distance(image1, image2):
-  
+def pixel_distance(output, target):
+    '''
+    Pixel distance between image1 and image2
+    '''
     transform = transforms.Compose([
         transforms.Lambda(lambda t: (t + 1) / (2)),
         transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
         ])
-    image1 = transform(image1)
-    image2 = transform(image2)
-    distance_map = torch.mean(torch.abs(image1 - image2), dim=1).unsqueeze(1)
+    output = transform(output)
+    target = transform(target)
+    distance_map = torch.mean(torch.abs(output - target), dim=1).unsqueeze(1)
     return distance_map
 
 
 
 
 def feature_distance(output, target, FE, config):
+    '''
+    Feature distance between output and target
+    '''
     FE.eval()
     transform = transforms.Compose([
             transforms.Lambda(lambda t: (t + 1) / (2)),

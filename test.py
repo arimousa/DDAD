@@ -10,7 +10,11 @@ from feature_extractor import *
 
 
 
-def validate(unet, config):
+def evaluate(unet, config):
+    '''
+    Evaluate the model on the test set
+    visulaize the results
+    '''
     test_dataset = Dataset_maker(
         root= config.data.data_dir,
         category=config.data.category,

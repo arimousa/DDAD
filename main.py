@@ -3,7 +3,7 @@ import numpy as np
 import os
 import argparse
 from unet import *
-from test import validate
+from test import evaluate
 from omegaconf import OmegaConf
 from train import trainer
 from feature_extractor import * 
@@ -25,7 +25,7 @@ def train(args):
 
 
 
-def evaluate(args):
+def test(args):
     config = OmegaConf.load(args.config)
     unet = build_model(config)
     checkpoint = torch.load(os.path.join(os.getcwd(), config.model.checkpoint_dir, config.data.category, str(config.model.load_chp)))
@@ -33,7 +33,7 @@ def evaluate(args):
     unet.load_state_dict(checkpoint)    
     unet.to(config.model.device)
     unet.eval()
-    validate(unet, config)
+    evaluate(unet, config)
 
 
 
@@ -87,7 +87,7 @@ if __name__ == "__main__":
         domain_adaptation(args)
     if args.eval:
         print('Evaluating...')
-        evaluate(args)
+        test(args)
 
 
         

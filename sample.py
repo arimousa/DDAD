@@ -6,6 +6,14 @@ import numpy as np
 
 
 def Reconstruction(y0, x, seq, model, config, w):
+    '''
+    The reconstruction process
+    :param y: the target image
+    :param x: the input image
+    :param seq: the sequence of denoising steps
+    :param model: the UNet model
+    :param x0_t: the prediction of x0 at time step t
+    '''
     with torch.no_grad():
         n = x.size(0)
         seq_next = [-1] + list(seq[:-1])
