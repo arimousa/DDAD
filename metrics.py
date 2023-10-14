@@ -8,12 +8,24 @@ from statistics import mean
 import numpy as np
 from sklearn.metrics import auc
 from sklearn import metrics
+from sklearn.metrics import roc_auc_score, roc_curve
+
 
 
 def metric(labels_list, predictions, anomaly_map_list, gt_list, config):
-    labels_list = torch.tensor(labels_list)
-    predictions = torch.tensor(predictions)
+    auroc_image = roc_auc_score(labels_list, predictions)
+    fpr, tpr, thresholds = roc_curve(labels_list, predictions)
+
+    # Calculate Youden's J statistic for each threshold
+    youden_j = tpr - fpr
+
+    # Find the optimal threshold that maximizes Youden's J statistic
+    optimal_threshold_index = np.argmax(youden_j)
+    optimal_threshold = thresholds[optimal_threshold_index]
+
+
     pro = compute_pro(gt_list, anomaly_map_list, num_th = 200)
+
     resutls_embeddings = anomaly_map_list[0]
     for feature in anomaly_map_list[1:]:
         resutls_embeddings = torch.cat((resutls_embeddings, feature), 0)
@@ -26,44 +38,31 @@ def metric(labels_list, predictions, anomaly_map_list, gt_list, config):
     resutls_embeddings = resutls_embeddings.clone().detach().requires_grad_(False)
     gt_embeddings = gt_embeddings.clone().detach().requires_grad_(False)
 
-    auroc = AUROC(task="binary")
+    auroc_p = AUROC(task="binary")
     
-    auroc_score = auroc(predictions, labels_list)
-
     gt_embeddings = torch.flatten(gt_embeddings).type(torch.bool).cpu().detach()
     resutls_embeddings = torch.flatten(resutls_embeddings).cpu().detach()
 
-    auroc_pixel = auroc(resutls_embeddings, gt_embeddings)
-
-    r_gt_embeddings = gt_embeddings.cpu().detach().numpy().ravel()
-    r_resutls_embeddings = resutls_embeddings.cpu().detach().numpy().ravel()
-    precision, recall, thresholds = metrics.precision_recall_curve(
-        r_gt_embeddings.astype(int), r_resutls_embeddings
-    )
-    F1_scores = np.divide(
-        2 * precision * recall,
-        precision + recall,
-        out=np.zeros_like(precision),
-        where=(precision + recall) != 0,
-    )
-
-    thresholdOpt = thresholds[np.argmax(F1_scores)]
+    auroc_pixel = auroc_p(resutls_embeddings, gt_embeddings)
 
 
-    predictions0_1 = (predictions > thresholdOpt).int()
-    for i,(l,p) in enumerate(zip(labels_list, predictions0_1)):
-        print('Sample : ', i, ' predicted as: ',p.item() ,' label is: ',l.item(),'\n' ) if l != p else None
+    predictions = torch.tensor(predictions)
+    labels_list = torch.tensor(labels_list)
+    predictions0_1 = (predictions > optimal_threshold).int()
+    # for i,(l,p) in enumerate(zip(labels_list, predictions0_1)):
+    #     print('Sample : ', i, ' predicted as: ',p.item() ,' label is: ',l.item(),'\n' ) if l != p else None
 
+    print('AUROC: ({:.1f},{:.1f})'.format(auroc_image*100,auroc_pixel*100))
 
-    if config.metrics.image_level_AUROC:
-        print(f'AUROC: {auroc_score}')
-    if config.metrics.pixel_level_AUROC:
-        print(f"AUROC pixel level: {auroc_pixel} ")
+    # if config.metrics.image_level_AUROC:
+    #     print(f'AUROC: {auroc_image}')
+    # if config.metrics.pixel_level_AUROC:
+    #     print(f"AUROC pixel level: {auroc_pixel} ")
     if config.metrics.pro:
         print(f'PRO: {pro}')
+    # print("Optimal Threshold:", optimal_threshold)
         
-    auroc = auroc.reset()
-    return thresholdOpt
+    return optimal_threshold
 
 
 
@@ -83,7 +82,7 @@ def compute_pro(masks, amaps, num_th = 200):
     min_th = amaps.min()
     max_th = amaps.max()
     delta = (max_th - min_th) / num_th
-    binary_amaps = np.zeros_like(amaps, dtype=np.bool)
+    binary_amaps = np.zeros_like(amaps)
     df = pd.DataFrame([], columns=["pro", "fpr", "threshold"])
 
     for th in np.arange(min_th, max_th, delta):
