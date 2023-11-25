@@ -240,7 +240,7 @@ class UNetModel(nn.Module):
             if img_size == 512:
                 channel_mults = (0.5, 1, 1, 2, 2, 4, 4)
             elif img_size == 256:
-                channel_mults = (1, 1, 2, 2, 4, 4)
+                channel_mults = (1, 1, 2, 2, 4, 4)# 
             elif img_size == 128:
                 channel_mults = (1, 1, 2, 3, 4)
             elif img_size == 64:

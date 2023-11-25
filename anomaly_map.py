@@ -26,15 +26,11 @@ def heat_map(output, target, FE, config):
     output = output.to(config.model.device)
     target = target.to(config.model.device)
 
-        
-
     i_d = pixel_distance(output, target)
     f_d = feature_distance((output),  (target), FE, config)
     f_d = torch.Tensor(f_d).to(config.model.device)
-    # print('image_distance max : ',torch.max(i_d))
-    # print('feature_distance max : ',torch.max(f_d))
-    # visualalize_distance(output, target, i_d, f_d)
-    anomaly_map += f_d + config.model.v *  torch.max(f_d)/ torch.max(i_d) * i_d  
+
+    anomaly_map += f_d + config.model.v * torch.max(f_d)/ torch.max(i_d)* i_d  
     anomaly_map = gaussian_blur2d(
         anomaly_map , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
         )
@@ -47,12 +43,6 @@ def pixel_distance(output, target):
     '''
     Pixel distance between image1 and image2
     '''
-    transform = transforms.Compose([
-        transforms.Lambda(lambda t: (t + 1) / (2)),
-        transforms.Normalize([0.485, 0.456, 0.406], [0.229, 0.224, 0.225])
-        ])
-    output = transform(output)
-    target = transform(target)
     distance_map = torch.mean(torch.abs(output - target), dim=1).unsqueeze(1)
     return distance_map
 

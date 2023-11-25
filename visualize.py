@@ -3,29 +3,27 @@ from torchvision.transforms import transforms
 import numpy as np
 import torch
 import os
-from forward_process import *
 from dataset import *
-from sample import *
 
 
-def visualalize_distance(output, condition, target):
+def visualalize_reconstruction(input, recon, target):
     plt.figure(figsize=(11,11))
     plt.subplot(1, 3, 1).axis('off')
     plt.subplot(1, 3, 2).axis('off')
     plt.subplot(1, 3, 3).axis('off')
 
     plt.subplot(1, 3, 1)
-    plt.imshow(show_tensor_image(output))
+    plt.imshow(show_tensor_image(input))
     plt.title('input image')
     
 
     plt.subplot(1, 3, 2)
-    plt.imshow(show_tensor_image(condition))
-    plt.title('condition image')
+    plt.imshow(show_tensor_mask(recon))
+    plt.title('recon image')
 
     plt.subplot(1, 3, 3)
-    plt.imshow(show_tensor_image(target))
-    plt.title('generated image')
+    plt.imshow(show_tensor_mask(target))
+    plt.title('target image')
 
 
     k = 0
@@ -35,46 +33,46 @@ def visualalize_distance(output, condition, target):
     plt.close()
 
 
-def visualize_reconstructed(input, data,s):
-    fig, axs = plt.subplots(int(len(data)/5),6)
-    row = 0
-    col = 1
-    axs[0,0].imshow(show_tensor_image(input))
-    axs[0, 0].get_xaxis().set_visible(False)
-    axs[0, 0].get_yaxis().set_visible(False)
-    axs[0,0].set_title('input')
-    for i, img in enumerate(data):
-        axs[row, col].imshow(show_tensor_image(img))
-        axs[row, col].get_xaxis().set_visible(False)
-        axs[row, col].get_yaxis().set_visible(False)
-        axs[row, col].set_title(str(i))
-        col += 1
-        if col == 6:
-            row += 1
-            col = 0
-    col = 6
-    row = int(len(data)/5)
-    remain = col * row - len(data) -1
-    for j in range(remain):
-        col -= 1
-        axs[row-1, col].remove()
-        axs[row-1, col].get_xaxis().set_visible(False)
-        axs[row-1, col].get_yaxis().set_visible(False)
+# def visualize_reconstructed(input, data,s):
+#     fig, axs = plt.subplots(int(len(data)/5),6)
+#     row = 0
+#     col = 1
+#     axs[0,0].imshow(show_tensor_image(input))
+#     axs[0, 0].get_xaxis().set_visible(False)
+#     axs[0, 0].get_yaxis().set_visible(False)
+#     axs[0,0].set_title('input')
+#     for i, img in enumerate(data):
+#         axs[row, col].imshow(show_tensor_image(img))
+#         axs[row, col].get_xaxis().set_visible(False)
+#         axs[row, col].get_yaxis().set_visible(False)
+#         axs[row, col].set_title(str(i))
+#         col += 1
+#         if col == 6:
+#             row += 1
+#             col = 0
+#     col = 6
+#     row = int(len(data)/5)
+#     remain = col * row - len(data) -1
+#     for j in range(remain):
+#         col -= 1
+#         axs[row-1, col].remove()
+#         axs[row-1, col].get_xaxis().set_visible(False)
+#         axs[row-1, col].get_yaxis().set_visible(False)
         
     
         
-    plt.subplots_adjust(left=0.1,
-                    bottom=0.1,
-                    right=0.9,
-                    top=0.9,
-                    wspace=0.4,
-                    hspace=0.4)
-    k = 0
+#     plt.subplots_adjust(left=0.1,
+#                     bottom=0.1,
+#                     right=0.9,
+#                     top=0.9,
+#                     wspace=0.4,
+#                     hspace=0.4)
+#     k = 0
 
-    while os.path.exists(f'results/reconstructed{k}{s}.png'):
-        k += 1
-    plt.savefig(f'results/reconstructed{k}{s}.png')
-    plt.close()
+#     while os.path.exists(f'results/reconstructed{k}{s}.png'):
+#         k += 1
+#     plt.savefig(f'results/reconstructed{k}{s}.png')
+#     plt.close()
 
 
 
@@ -130,6 +128,7 @@ def show_tensor_image(image):
 
 def show_tensor_mask(image):
     reverse_transforms = transforms.Compose([
+        # transforms.Lambda(lambda t: (t + 1) / (2)),
         transforms.Lambda(lambda t: t.permute(1, 2, 0)), # CHW to HWC
         transforms.Lambda(lambda t: t.cpu().numpy().astype(np.int8)),
     ])

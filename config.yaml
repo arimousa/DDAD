@@ -1,45 +1,50 @@
 data :
-  name: VisA  #MVTec #MTD #VisA 
-  data_dir: datasets/VisA  #MVTec #VisA #MTD  
-  category: pcb4   #['carpet', 'bottle', 'hazelnut', 'leather', 'cable', 'capsule', 'grid', 'pill', 'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']    
+  name: MVTec  #MVTec #MTD #VisA 
+  data_dir: datasets/MVTec  #MVTec #VisA #MTD  
+  category: capsule  #['carpet', 'bottle', 'hazelnut', 'leather', 'cable', 'capsule', 'grid', 'pill', 'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']    
                    # ['candle', 'capsules', 'cashew', 'chewinggum', 'fryum', 'macaroni1', 'macaroni2', 'pcb1', 'pcb2' ,'pcb3', 'pcb4', 'pipe_fryum']
   image_size: 256 
-  batch_size: 32
+  batch_size: 32 # 32 for DDAD and 16 for DDADS
+  DA_batch_size: 16 #16 for MVTec and [macaroni2, pcb1] in VisA, and 32 for other categories in VisA
+  test_batch_size: 16 #16 for MVTec, 32 for VisA
   mask : True 
   imput_channel : 3
 
 
 
 model:
-  checkpoint_dir: checkpoints/VisA   #MTD  #MVTec  #VisA
+  DDADS: False
+  checkpoint_dir: checkpoints/MVTec   #MTD  #MVTec  #VisA
   checkpoint_name: weights
   exp_name: default
-  feature_extractor: wide_resnet101_2  # wide_resnet50_2 #resnet50
+  feature_extractor: wide_resnet101_2 #wide_resnet101_2  # wide_resnet50_2 #resnet50
   learning_rate: 3e-4 
-  weight_decay: 0.05 
-  epochs: 2000
-  load_chp : 1000 # From this epoch checkpoint will be loaded. Every 250 epochs a checkpoint is saved. Try to load 750 or 1000 epochs for Visa and 1000-1500-2000 for MVTec.
-  DA_epochs: 3  # Number of epochs for Domain adaptation. Try [0-3]. "Fine tuninig this parameter results in better performance".
-  eta : 1 # Stochasticity parameter for denoising process.
-  v : 7 # Control parameter for pixel-wise and feature-wise comparison. v * D_p + D_f
-  w : 4 # Conditionig parameter. The higher the value, the more the model is conditioned on the target image. "Fine tuninig this parameter results in better performance".
-  w_DA : 3 # Conditionig parameter for domain adaptation. The higher the value, the more the model is conditioned on the target image.
+  weight_decay: 0.05
+  epochs: 3000
+  load_chp : 1500 # From this epoch checkpoint will be loaded. Every 250 epochs a checkpoint is saved. Try to load 750 or 1000 epochs for Visa and 1000-1500-2000 for MVTec.
+  DA_epochs: 30 # Number of epochs for Domain adaptation.
+  DA_chp: 8
+  v : 1 #7 # 1 for MVTec and cashew in VisA, and 7 for VisA (1.5 for cashew). Control parameter for pixel-wise and feature-wise comparison. v * D_p + D_f
+  w : 8 # Conditionig parameter. The higher the value, the more the model is conditioned on the target image. "Fine tuninig this parameter results in better performance".
+  w_DA : 3 #3 # Conditionig parameter for domain adaptation. The higher the value, the more the model is conditioned on the target image.
+  DLlambda : 0.1 # 0.1 for MVTec and 0.01 for VisA
   trajectory_steps: 1000
-  test_trajectoy_steps: 200   # Starting point for denoining trajectory.
-  test_trajectoy_steps_DA: 200  # Starting point for denoining trajectory for domain adaptation.
-  skip : 20   # Number of steps to skip for denoising trajectory.
-  skip_DA : 20
+  test_trajectoy_steps: 250   # Starting point for denoining trajectory.
+  test_trajectoy_steps_DA: 250  # Starting point for denoining trajectory for domain adaptation.
+  skip : 25   # Number of steps to skip for denoising trajectory.
+  skip_DA : 25
+  eta : 1 # Stochasticity parameter for denoising process.
   beta_start : 0.0001
   beta_end : 0.02 
   device: 'cuda' #<"cpu", "gpu", "tpu", "ipu">
   save_model: True
-  num_workers : 32
+  num_workers : 2
   seed : 42
 
 
 
 metrics:
-  image_level_AUROC: True
-  pixel_level_AUROC: True
+  auroc: True
   pro: True
-
+  misclassifications: False
+  visualisation: False
