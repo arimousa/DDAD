@@ -14,6 +14,8 @@ pip install -r requirements.txt
 ```
 
 ## Train and Evaluation of the Model
+You can obtain the checkpoints by downloading them directly from the following link: : https://drive.google.com/drive/u/0/folders/1FF83llo3a-mN5pJN8-_mw0hL5eZqe9fC
+
 For tarining the denoising UNet, run:
 
 ```train
@@ -57,19 +59,25 @@ Name_of_Dataset
 ```
 
 
+
+
 ## Results
-We expect by running code as explained in this file achieve the following results. Nevertheless, slight changes may be expected due to different software and harware.
-Following is the expected results on VisA Dataset. Anomaly Detection (Image AUROC) and Anomaly Localization (Pixel AUROC, PRO)
-| Category | Candle | Capsules |  Cashew | Chewing gum | Fryum | Macaroni1 |  Macaroni2 | PCB1 | PCB2 | PCB3 | PCB4 | Pipe fryum | Average
-|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Detection | 99.9% | 97.9% | 98.4% | 99.0% | 98.8% | 100% | 99.2% | 99.9% |  99.2% | 100% | 99.9% | 99.8% | 99.3%
-| Localization | (98.4%,95.2%) |  (99.6%,99.6%) | (93.0%,80.5%) | (97.6%,84.4%) | (93.6%,93.3%) | (99.3%,99.1%) | (99.2%,98.5%) | (94.3%,94.4%) | (97.0%,90.6%) | (98.1%,95.2%) | (98.3%,92.3%) | (96.5%,85.2%) |(97.0%,91.3%)
+We expect by running code as explained in this file achieve the following results. 
+Anomaly Detection (Image AUROC) and Anomaly Localization (Pixel AUROC, PRO)
 
 Expected results for MVTec AD:
 | Category | Carpet | Grid |  Leather | Tile | Wood | Bottle |  Cable | Capsule | Hazel nut | Metalnut | Pill | Screw | Toothbrush | Transistor | Zipper |Average
 |---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| Detection | 97.8% | 100% | 100% | 100% | 99.8% | 100% | 99.7% | 98.1% | 99.9% | 99.0% | 98.6% | 99.5% | 100% | 99.6% | 100% | 99.5% 
-| Localization | (98.0%,91.0%) |  (99.6%,98.5%) | (99.3%,98.3%) | (98.5%,96.7%) | (96.8%,90.0%) | (98.9%,94.8%) | (98.4%,90.9%) | (96.2%,90.7%) | (99.0%,87.3%) | (96.8%,91.8%) | (99.2%,95.6%) | (99.4%,92.0%) | (98.9%,95.0%) | (92.6%,87.2%) | (98.6%,94.1%) | (98,1%,92.9%)
+| Detection | 99.3% | 100% | 100% | 100% | 100% | 100% | 99.4% | 99.4% | 100% | 100% | 100% | 99.0% | 100% | 100% | 100% | 99.8% 
+| Localization | (98.7%,93.9%) |  (99.4%,97.3%) | (99.4%,97.7%) | (98.2%,93.1%) | (95.0%,82.9%) | (98.7%,91.8%) | (98.1%,88.9%) | (95.7%,93.4%) | (98.4%,86.7%) | (99.0%,91.1%) | (99.1%,95.5%) | (99.3%,96.3%) | (98.7%,92.6%) | (95.3%,90.1%) | (98.2%,93.2%) | (98,1%,92.3%)
+
+Following is the expected results on VisA Dataset. 
+
+| Category | Candle | Capsules |  Cashew | Chewing gum | Fryum | Macaroni1 |  Macaroni2 | PCB1 | PCB2 | PCB3 | PCB4 | Pipe fryum | Average
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| Detection | 99.9% | 100% | 94.5% | 98.1% | 99.0% | 99.2% | 99.2% | 100% |  99.7% | 97.2% | 100% | 100% | 98.9%
+| Localization | (98.7%,96.6%) |  (99.5%,95.0%) | (97.4%,80.3%) | (96.5%,85.2%) | (96.9%,94.2%) | (98.7%,98.5%) | (98.2%,99.3%) | (93.4%,93.3%) | (97.4%,93.3%) | (96.3%,86.6%) | (98.5%,95.5%) | (99.5%,94.7%) |(97.6%,92.7%)
+
 
 ![Framework](images/Qualitative.png)
 
