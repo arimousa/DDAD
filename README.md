@@ -1,6 +1,6 @@
 # Anomaly Detection with Conditioned Denoising Diffusion Models.
 
-This repository is the official implementation of DDAD
+Official implementation of DDAD
 
 ![Framework](images/DDAD_Framework.png)
 
@@ -14,31 +14,29 @@ pip install -r requirements.txt
 ```
 
 ## Train and Evaluation of the Model
-You can obtain the checkpoints by downloading them directly from the following link: : https://drive.google.com/drive/u/0/folders/1FF83llo3a-mN5pJN8-_mw0hL5eZqe9fC
+You can download the model checkpoints directly from [Checkpoints](https://drive.google.com/drive/u/0/folders/1FF83llo3a-mN5pJN8-_mw0hL5eZqe9fC) 
 
-For tarining the denoising UNet, run:
+To train the denoising UNet, run:
 
 ```train
 python main.py --train True
 ```
 
-In the config.yaml file you can change the setting for trainnig. By chaning category, one can train the model on different categories.
+Modify the settings in the config.yaml file to train the model on different categories.
 
-For fine tuning the feature extractor, run:
+
+For fine-tuning the feature extractor, use the following command:
 
 ```domain_adaptation
 python main.py --domain_adaptation True
 ```
-Note that in config.yaml, hyperparameter 'DA_epochs' determines the number of iteration for fine tuning. Depending on the number of trainin dataset and complexity of the category chagning this hyperparameter between 0 to 3 my help enormously.
 
-For evaluation and testing the model, run:
+To evaluate and test the model, run:
+
 ```eval
 python main.py --eval True
 ```
-While we find 'w=4' a suitable number for reconstruction, increasing and decreasing this hyperparameter helps for better reconstruction.
 
-
-Note that in config.yaml file 'epochs' referes to the number of training itarations. However, for evaluation the parameter 'load_chp' determines from which checkpoint the model should be loaded.'
 
 ## Dataset
 You can download  [MVTec AD: MVTec Software](https://www.mvtec.com/company/research/datasets/mvtec-ad/) and [VisA](https://amazon-visual-anomaly.s3.us-west-2.amazonaws.com/VisA_20220922.tar) Benchmarks.
@@ -62,7 +60,8 @@ Name_of_Dataset
 
 
 ## Results
-We expect by running code as explained in this file achieve the following results. 
+Running the code as explained in this file should achieve the following results for MVTec AD:
+
 Anomaly Detection (Image AUROC) and Anomaly Localization (Pixel AUROC, PRO)
 
 Expected results for MVTec AD:
@@ -71,7 +70,8 @@ Expected results for MVTec AD:
 | Detection | 99.3% | 100% | 100% | 100% | 100% | 100% | 99.4% | 99.4% | 100% | 100% | 100% | 99.0% | 100% | 100% | 100% | 99.8% 
 | Localization | (98.7%,93.9%) |  (99.4%,97.3%) | (99.4%,97.7%) | (98.2%,93.1%) | (95.0%,82.9%) | (98.7%,91.8%) | (98.1%,88.9%) | (95.7%,93.4%) | (98.4%,86.7%) | (99.0%,91.1%) | (99.1%,95.5%) | (99.3%,96.3%) | (98.7%,92.6%) | (95.3%,90.1%) | (98.2%,93.2%) | (98,1%,92.3%)
 
-The setting used to achieve the results are:
+The settings used for these results are detailed in the table.
+
 | **Categories** | Carpet | Grid | Leather | Tile | Wood | Bottle | Cable | Capsule | Hazelnut | Metal nut | Pill | Screw | Toothbrush | Transistor | Zipper |
 | -------------- | ------ | ---- | ------- | ---- | ---- | ------ | ----- | ------- | -------- | --------- | ---- | ----- | ----------- | ---------- | ------ |
 | **\(w\)**       | 0      | 4    | 11      | 4    | 11   | 3      | 3     | 8       | 5        | 7         | 9    | 2     | 0           | 0          | 10     |
@@ -86,7 +86,8 @@ Following is the expected results on VisA Dataset.
 | Detection | 99.9% | 100% | 94.5% | 98.1% | 99.0% | 99.2% | 99.2% | 100% |  99.7% | 97.2% | 100% | 100% | 98.9%
 | Localization | (98.7%,96.6%) |  (99.5%,95.0%) | (97.4%,80.3%) | (96.5%,85.2%) | (96.9%,94.2%) | (98.7%,98.5%) | (98.2%,99.3%) | (93.4%,93.3%) | (97.4%,93.3%) | (96.3%,86.6%) | (98.5%,95.5%) | (99.5%,94.7%) |(97.6%,92.7%)
 
-The setting used to acheive the results are:
+The settings used for these results are detailed in the table.
+
 | **Categories**   | Candle | Capsules | Cashew | Chewing gum | Fryum | Macaroni1 | Macaroni2 | PCB1 | PCB2 | PCB3 | PCB4 | Pipe fryum |
 | ---------------- | ------ | -------- | ------ | ------------ | ----- | --------- | --------- | ---- | ---- | ---- | ---- | ---------- |
 | **\(w\)**         | 6      | 5        | 0      | 6            | 4     | 5         | 2         | 9    | 5    | 6    | 6    | 8          |
@@ -109,4 +110,4 @@ The setting used to acheive the results are:
 
 ## Feedback
 
-Please reach out to arian.mousakhan@gmail.com
+For any feedback or inquiries, please contact arian.mousakhan@gmail.com
