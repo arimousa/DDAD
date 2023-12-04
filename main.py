@@ -17,18 +17,16 @@ def build_model(config):
     return unet
 
 def train(config):
-    for c in ['pcb3']: #'tile','toothbrush','wood'
-        print(c)
-        torch.manual_seed(42)
-        np.random.seed(42)
-        unet = build_model(config)
-        print(" Num params: ", sum(p.numel() for p in unet.parameters()))
-        unet = unet.to(config.model.device)
-        unet.train()
-        unet = torch.nn.DataParallel(unet)
-        # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'1000'))
-        # unet.load_state_dict(checkpoint)  
-        trainer(unet, c, config)#config.data.category, 
+    torch.manual_seed(42)
+    np.random.seed(42)
+    unet = build_model(config)
+    print(" Num params: ", sum(p.numel() for p in unet.parameters()))
+    unet = unet.to(config.model.device)
+    unet.train()
+    unet = torch.nn.DataParallel(unet)
+    # checkpoint = torch.load(os.path.join(os.path.join(os.getcwd(), config.model.checkpoint_dir), config.data.category,'1000'))
+    # unet.load_state_dict(checkpoint)  
+    trainer(unet, config.data.category, config)#config.data.category, 
 
 
 def detection(config):
