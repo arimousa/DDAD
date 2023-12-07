@@ -30,7 +30,7 @@ def heat_map(output, target, FE, config):
     f_d = feature_distance((output),  (target), FE, config)
     f_d = torch.Tensor(f_d).to(config.model.device)
 
-    anomaly_map += f_d + config.model.v * torch.max(f_d)/ torch.max(i_d)* i_d  
+    anomaly_map += f_d + config.model.v * (torch.max(f_d)/ torch.max(i_d)) * i_d  
     anomaly_map = gaussian_blur2d(
         anomaly_map , kernel_size=(kernel_size,kernel_size), sigma=(sigma,sigma)
         )
