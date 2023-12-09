@@ -11,9 +11,9 @@ os.environ['CUDA_VISIBLE_DEVICES'] = "0,1,2"
 
 def build_model(config):
     if config.model.DDADS:
-        unet = UNetModel(config.data.image_size, 32, dropout=0.3, n_heads=2 ,in_channels=config.data.imput_channel)
+        unet = UNetModel(config.data.image_size, 32, dropout=0.3, n_heads=2 ,in_channels=config.data.input_channel)
     else:
-        unet = UNetModel(config.data.image_size, 64, dropout=0.0, n_heads=4 ,in_channels=config.data.imput_channel)
+        unet = UNetModel(config.data.image_size, 64, dropout=0.0, n_heads=4 ,in_channels=config.data.input_channel)
     return unet
 
 def train(config):

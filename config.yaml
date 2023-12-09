@@ -1,7 +1,7 @@
 data :
   name: MVTec  #MVTec #MTD #VisA 
   data_dir: datasets/MVTec  #MVTec #VisA #MTD  
-  category: capsule  #['carpet', 'bottle', 'hazelnut', 'leather', 'cable', 'capsule', 'grid', 'pill', 'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']    
+  category: screw  #['carpet', 'bottle', 'hazelnut', 'leather', 'cable', 'capsule', 'grid', 'pill', 'transistor', 'metal_nut', 'screw','toothbrush', 'zipper', 'tile', 'wood']    
                    # ['candle', 'capsules', 'cashew', 'chewinggum', 'fryum', 'macaroni1', 'macaroni2', 'pcb1', 'pcb2' ,'pcb3', 'pcb4', 'pipe_fryum']
   image_size: 256 
   batch_size: 32 # 32 for DDAD and 16 for DDADS
@@ -21,11 +21,11 @@ model:
   learning_rate: 3e-4 
   weight_decay: 0.05
   epochs: 3000
-  load_chp : 1500 # From this epoch checkpoint will be loaded. Every 250 epochs a checkpoint is saved. Try to load 750 or 1000 epochs for Visa and 1000-1500-2000 for MVTec.
-  DA_epochs: 30 # Number of epochs for Domain adaptation.
-  DA_chp: 8
+  load_chp : 2000 # From this epoch checkpoint will be loaded. Every 250 epochs a checkpoint is saved. Try to load 750 or 1000 epochs for Visa and 1000-1500-2000 for MVTec.
+  DA_epochs: 4 # Number of epochs for Domain adaptation.
+  DA_chp: 4
   v : 1 #7 # 1 for MVTec and cashew in VisA, and 7 for VisA (1.5 for cashew). Control parameter for pixel-wise and feature-wise comparison. v * D_p + D_f
-  w : 8 # Conditionig parameter. The higher the value, the more the model is conditioned on the target image. "Fine tuninig this parameter results in better performance".
+  w : 2 # Conditionig parameter. The higher the value, the more the model is conditioned on the target image. "Fine tuninig this parameter results in better performance".
   w_DA : 3 #3 # Conditionig parameter for domain adaptation. The higher the value, the more the model is conditioned on the target image.
   DLlambda : 0.1 # 0.1 for MVTec and 0.01 for VisA
   trajectory_steps: 1000
