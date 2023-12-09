@@ -8,7 +8,7 @@ data :
   DA_batch_size: 16 #16 for MVTec and [macaroni2, pcb1] in VisA, and 32 for other categories in VisA
   test_batch_size: 16 #16 for MVTec, 32 for VisA
   mask : True 
-  imput_channel : 3
+  input_channel : 3
 
 
 
