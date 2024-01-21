@@ -38,8 +38,8 @@ python main.py --domain_adaptation True
 
 To evaluate and test the model, run:
 
-```eval
-python main.py --eval True
+```detection
+python main.py --detection True
 ```
 
 
