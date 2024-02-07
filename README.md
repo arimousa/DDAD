@@ -11,7 +11,7 @@ Official implementation of [DDAD](https://arxiv.org/abs/2305.15956)
 
 
 ## Requirements
-This repository is implemented and tested on Python 3.8 and PyTorch 1.13.
+This repository is implemented and tested on Python 3.8 and PyTorch 2.1.
 To install requirements:
 
 ```setup
